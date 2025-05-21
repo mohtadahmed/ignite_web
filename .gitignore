@@ -30,8 +30,4 @@ local_settings.py
 .vscode/
 *.swp
 
-manage.py
-
 migrations/
-
-bkash.py
