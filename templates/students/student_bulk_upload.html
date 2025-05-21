@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4">
+    <h4 class="text-secondary mb-3">Bulk Upload Students (CSV)</h4>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="file" class="form-label">Upload CSV File</label>
+        <input class="form-control" type="file" name="file" id="file" accept=".csv" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
+
+    <div class="mt-3">
+      <p><strong>CSV Format:</strong></p>
+      <code>email,password,student_id,department,semester,phone,session,address,program</code>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-warning">Add Quiz Marks</h6>
+    </div>
+    <div class="card-body">
+      <form method="post" action="">
+        {% csrf_token %}
+        <div class="form-row mb-2">
+          <div class="col">
+            <input type="text" name="quiz_title" class="form-control" placeholder="Quiz Title">
+          </div>
+          <div class="col">
+            <input type="number" name="quiz_marks" class="form-control" placeholder="Marks">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning">Save Quiz Marks</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

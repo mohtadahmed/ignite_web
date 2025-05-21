@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+
+  <!-- CT Marks Panel -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between">
+      <h6 class="m-0 font-weight-bold text-primary">Add Class Test (CT) Marks</h6>
+      <button type="button" class="btn btn-sm btn-info" onclick="addCtRow()">Add CT</button>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'add_ct_marks' %}">
+        {% csrf_token %}
+        <div id="ctRows">
+          <div class="form-row mb-2">
+            <div class="col">
+              <input type="text" name="ct_title[]" class="form-control" placeholder="CT Title">
+            </div>
+            <div class="col">
+              <input type="number" name="ct_marks[]" class="form-control" placeholder="Marks">
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save CT Marks</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Assignment Marks Panel -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between">
+      <h6 class="m-0 font-weight-bold text-success">Add Assignment Marks</h6>
+      <button type="button" class="btn btn-sm btn-info" onclick="addAssignmentRow()">Add Assignment</button>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'add_assignment_marks' %}">
+        {% csrf_token %}
+        <div id="assignmentRows">
+          <div class="form-row mb-2">
+            <div class="col">
+              <input type="text" name="assignment_title[]" class="form-control" placeholder="Assignment Title">
+            </div>
+            <div class="col">
+              <input type="number" name="assignment_marks[]" class="form-control" placeholder="Marks">
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success">Save Assignment Marks</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quiz Marks Panel -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-warning">Add Quiz Marks</h6>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'add_quiz_marks' %}">
+        {% csrf_token %}
+        <div class="form-row mb-2">
+          <div class="col">
+            <input type="text" name="quiz_title" class="form-control" placeholder="Quiz Title">
+          </div>
+          <div class="col">
+            <input type="number" name="quiz_marks" class="form-control" placeholder="Marks">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning">Save Quiz Marks</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript for adding CT and Assignment rows -->
+<script>
+  function addCtRow() {
+    const ctDiv = document.getElementById('ctRows');
+    ctDiv.insertAdjacentHTML('beforeend', `
+      <div class="form-row mb-2">
+        <div class="col">
+          <input type="text" name="ct_title[]" class="form-control" placeholder="CT Title">
+        </div>
+        <div class="col">
+          <input type="number" name="ct_marks[]" class="form-control" placeholder="Marks">
+        </div>
+      </div>
+    `);
+  }
+
+  function addAssignmentRow() {
+    const assignmentDiv = document.getElementById('assignmentRows');
+    assignmentDiv.insertAdjacentHTML('beforeend', `
+      <div class="form-row mb-2">
+        <div class="col">
+          <input type="text" name="assignment_title[]" class="form-control" placeholder="Assignment Title">
+        </div>
+        <div class="col">
+          <input type="number" name="assignment_marks[]" class="form-control" placeholder="Marks">
+        </div>
+      </div>
+    `);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4">
+    <h4>Assigned Courses to Faculty</h4>
+    <table class="table table-bordered" id="assignedCoureList">
+      <thead>
+        <tr>
+          <th>Course Code</th>
+          <th>Course Name</th>
+          <th>Faculty Name</th>
+          <th>Assigned On</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for assignment in assignments %}
+        <tr>
+          <td>{{ assignment.course.course_code }}</td>
+          <td>{{ assignment.course.course_name }}</td>
+          <td>{{ assignment.faculty }}</td>
+          <td>{{ assignment.assigned_on|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

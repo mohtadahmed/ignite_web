@@ -1,0 +1,20 @@
+<h3>Add Final Exam Marks for {{ course.course.course_name }}</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table class="table">
+        <thead>
+            <tr><th>Student</th><th>Marks</th></tr>
+        </thead>
+        <tbody>
+        {% for form in formset %}
+            <tr>
+                <td>{{ form.student }}</td>
+                <td>{{ form.marks }}</td>
+                {{ form.course }}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-success">Submit Marks</button>
+</form>

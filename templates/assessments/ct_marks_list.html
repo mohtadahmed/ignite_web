@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="text-primary mb-3">Class Test Marks</h3>
+  <table class="table table-bordered table-striped">
+    <thead class="thead-dark">
+      <tr>
+        <th>Student ID</th>
+        <th>Student Name</th>
+        <th>Course</th>
+        <th>Title</th>
+        <th>Mark</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mark in ct_marks %}
+      <tr>
+        <td>{{ mark.student.student_id }}</td>
+        <td>{{ mark.student.name }}</td>
+        <td>{{ mark.course.course_code }}</td>
+        <td>{{ mark.title }}</td>
+        <td>{{ mark.mark }}</td>
+        <td>{{ mark.date }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No CT marks found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
