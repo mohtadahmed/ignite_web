@@ -94,7 +94,6 @@ def register_view(request):
         password = request.POST.get('password')
         repeat_password = request.POST.get('repeat_password')
 
-        # Basic validation
         if not full_name or not email or not password or not repeat_password:
             messages.error(request, 'All fields are required.')
             return redirect('register')
@@ -103,23 +102,27 @@ def register_view(request):
             messages.error(request, 'Passwords do not match.')
             return redirect('register')
 
-        if User.objects.filter(username=full_name).exists():
-            messages.error(request, 'Username already exists.')
-            return redirect('register')
-
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already exists.')
             return redirect('register')
 
+        # Split full name
+        first_name, last_name = full_name.split(' ', 1) if ' ' in full_name else (full_name, '')
+
         # Create user
-        user = User.objects.create_user(username=full_name, email=email, password=password)
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
         user.save()
 
         messages.success(request, 'User registered successfully!')
-
         return redirect('register')
     
     return render(request, 'register.html')
+
 
 
 @api_view(['POST'])
