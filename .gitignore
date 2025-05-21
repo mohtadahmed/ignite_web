@@ -1,0 +1,37 @@
+# Ignore compiled Python files
+*.pyc
+__pycache__/
+
+# Ignore Django development server's default IP and port settings
+*.log
+*.pot
+*.pyo
+*.sqlite3
+
+# Ignore media and static files (user uploads and collected static files)
+# media/
+# static/
+static/upload
+
+env/
+conf/
+
+# Ignore environment-specific settings
+*.env
+
+# Ignore secret files containing sensitive information (e.g., database credentials)
+secret_key.py
+
+# Ignore local development settings
+local_settings.py
+
+# Ignore IDE-specific files (optional, add if needed)
+.idea/
+.vscode/
+*.swp
+
+manage.py
+
+migrations/
+
+bkash.py
