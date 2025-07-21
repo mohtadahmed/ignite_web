@@ -48,7 +48,7 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_id = models.CharField(max_length=20, unique=True)
     department = models.CharField(max_length=100)
-    semester = models.IntegerField()
+    semester = models.ForeignKey('academics.Semester', on_delete=models.SET_NULL, null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
     session = models.CharField(max_length=10, blank=True, null=True)
