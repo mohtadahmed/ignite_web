@@ -3,10 +3,26 @@
 <div class="container mt-4">
   <div class="card p-4">
     <h4>Create Faculty</h4>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
     <form method="post">
       {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-primary">Create Faculty</button>
+      <div class="mb-3">
+        <label for="email" class="form-label">Faculty Email</label>
+        <input type="email" class="form-control" id="email" name="email" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+      </div>
+
+      <button type="submit" class="btn btn-sm btn-primary">Create Faculty</button>
     </form>
   </div>
 </div>

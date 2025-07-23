@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h4>Edit Faculty</h4>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Name</label>
+      <input type="text" name="name" class="form-control" value="{{ faculty.name }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Designation</label>
+      <input type="text" name="designation" class="form-control" value="{{ faculty.designation }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Department</label>
+      <input type="text" name="department" class="form-control" value="{{ faculty.department }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" value="{{ faculty.user.email }}">
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Update Faculty</button>
+  </form>
+</div>
+{% endblock %}
