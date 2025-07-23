@@ -100,3 +100,16 @@ class CGPARecord(models.Model):
 
     def __str__(self):
         return f"{self.student} - CGPA: {self.cgpa}"
+    
+
+class AttendanceMark(models.Model):
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    mark = models.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        unique_together = ('student', 'course', 'semester')
+
+    def __str__(self):
+        return f"{self.student} - {self.course} - {self.semester} - {self.mark}"
