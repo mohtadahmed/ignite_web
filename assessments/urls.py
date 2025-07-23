@@ -11,6 +11,11 @@ urlpatterns = [
     path('assignment-marks/', views.assignment_marks_list, name='assignment_marks_list'),
     path('quiz-marks/', views.quiz_marks_list, name='quiz_marks_list'),
 
+    path('attendance/', views.attendance_mark_entry, name='attendance_mark_entry'),
+    path('get-courses/', views.get_courses_by_semester, name='get_courses_by_semester'),
+    path('get-students/', views.get_students_for_attendance, name='get_students_for_attendance'),
+    path('save-attendance/', views.save_attendance_marks, name='save_attendance_marks'),
+
     path('marks_view/', views.marks_view, name='marks_view'),
 
     path('add-final-exam-marks/', views.add_final_exam_marks, name='add_final_exam_marks'),

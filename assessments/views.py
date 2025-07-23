@@ -3,6 +3,9 @@ from .models import *
 from .forms import *
 from django.contrib import messages
 from accounts.models import CourseAssignment
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
 
 
 # Create your views here.
@@ -94,3 +97,72 @@ def add_final_exam_marks(request, course_id):
         formset = FinalExamMarkFormSet(queryset=FinalExamMark.objects.none(), initial=initial_data)
 
     return render(request, 'faculty/add_final_exam_marks.html', {'formset': formset, 'course': course})
+
+
+# Attendance Mark Section
+def attendance_mark_entry(request):
+    semesters = Semester.objects.all()
+    return render(request, 'marks/attendance_entry.html', {'semesters': semesters})
+
+
+def get_courses_by_semester(request):
+    semester_id = request.GET.get('semester_id') 
+    courses = Course.objects.filter(semester_id=semester_id).values('id', 'course_code', 'course_name')
+    return JsonResponse(list(courses), safe=False)
+
+
+def get_students_for_attendance(request):
+    semester_id = request.GET.get('semester_id')
+    course_id = request.GET.get('course_id')
+
+    students = StudentProfile.objects.filter(semester_id=semester_id)
+    student_data = []
+
+    for student in students:
+        try:
+            mark_obj = AttendanceMark.objects.get(
+                student=student,
+                course_id=course_id,
+                semester_id=semester_id
+            )
+            mark = mark_obj.mark
+        except AttendanceMark.DoesNotExist:
+            mark = ''
+
+        student_data.append({
+            'id': student.id,
+            'student_id': student.student_id,
+            'mark': mark
+        })
+
+    return JsonResponse(student_data, safe=False)
+
+
+@csrf_exempt
+def save_attendance_marks(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        course_id = data.get('course_id')
+        semester_id = data.get('semester_id')
+        marks_data = data.get('marks')
+
+        for item in marks_data:
+            student_id = item.get('student_id')
+            mark = item.get('mark')
+
+            if mark is None or mark == '':
+                mark = 0
+            else:
+                try:
+                    mark = float(mark)
+                except ValueError:
+                    mark = 0
+
+            AttendanceMark.objects.update_or_create(
+                student_id=student_id,
+                course_id=course_id,
+                semester_id=semester_id,
+                defaults={'mark': mark}
+            )
+        return JsonResponse({'status': 'success'})
