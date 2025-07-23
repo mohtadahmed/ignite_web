@@ -1,13 +1,32 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-  <div class="card p-4">
-    <h4>Assign Faculty to Course</h4>
-    <form method="post">
+  <div class="container">
+    <div class="card p-4">
+    <h2>Assign Course to Faculty</h2>
+
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
-      {{ form.as_p }}
+      <div class="mb-3">
+        <label for="course">Select Course:</label>
+        <select name="course_id" class="form-control" required>
+          {% for course in courses %}
+            <option value="{{ course.id }}">{{ course.course_code }} - {{ course.course_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="faculty">Select Faculty:</label>
+        <select name="faculty_id" class="form-control" required>
+          {% for faculty in faculties %}
+            <option value="{{ faculty.id }}">{{ faculty.user.email }} ({{ faculty.department }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
       <button type="submit" class="btn btn-primary">Assign</button>
     </form>
   </div>
 </div>
+
 {% endblock %}

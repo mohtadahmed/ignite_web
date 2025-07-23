@@ -10,6 +10,7 @@
           <th>Course Name</th>
           <th>Faculty Name</th>
           <th>Assigned On</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -19,6 +20,10 @@
           <td>{{ assignment.course.course_name }}</td>
           <td>{{ assignment.faculty }}</td>
           <td>{{ assignment.assigned_on|date:"Y-m-d H:i" }}</td>
+          <td>
+            <a href="{% url 'edit_course_assignment' assignment.id %}" class="btn btn-sm btn-warning">Edit</a>
+            <a href="{% url 'delete_course_assignment' assignment.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this assignment?');">Delete</a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

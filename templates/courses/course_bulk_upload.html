@@ -1,0 +1,29 @@
+<!-- templates/courses/course_bulk_upload.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4">
+    <div class="d-flex justify-content-between">
+        <h4>Bulk Upload Courses</h4>
+        <div>
+            <a href="{% url 'download_course_template' %}" class="btn btn-sm btn-outline-primary ms-2">Download Template</a>
+        </div>
+    </div>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="upload_file" class="form-label">Upload Excel or CSV</label>
+        <input type="file" name="upload_file" id="upload_file" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Upload</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
