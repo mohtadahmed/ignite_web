@@ -43,18 +43,18 @@
         <label for="department" class="form-label">Department</label>
         <input type="text" class="form-control" name="department" id="department">
       </div>
-
-      <div class="col-md-4">
+      
+      <!-- <div class="col-md-4">
         <label for="semester" class="form-label">Semester</label>
         <input type="number" class="form-control" name="semester" id="semester">
-      </div>
+      </div> -->
 
-      <div class="col-md-4">
+      <div class="col-md-6">
         <label for="phone" class="form-label">Phone</label>
         <input type="text" class="form-control" name="phone" id="phone">
       </div>
 
-      <div class="col-md-4">
+      <div class="col-md-6">
         <label for="session" class="form-label">Session</label>
         <input type="text" class="form-control" name="session" id="session">
       </div>
@@ -71,6 +71,18 @@
           <option value="B.Sc">B.Sc</option>
           <option value="M.S">M.S</option>
         </select>
+      </div>
+
+      <div class="col-md-6">
+        <div class="form-group">
+          <label for="semester">Semester</label>
+          <select name="semester" id="semester" class="form-control" required>
+            <option selected disabled>Select Semester</option>
+            {% for sem in semesters %}
+              <option value="{{ sem.id }}">{{ sem.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
       <div class="col-12">
