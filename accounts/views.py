@@ -336,8 +336,8 @@ def download_sample_csv(request):
 
     writer = csv.writer(response)
     writer.writerow(['email', 'password', 'student_id', 'department', 'semester', 'phone', 'session', 'address', 'program'])
-    writer.writerow(['john@example.com', '123456', 'ST001', 'CSE', '6', '0123456789', '2020-21', 'Dhaka', 'B.Sc'])
-    writer.writerow(['jane@example.com', 'abcdef', 'ST002', 'EEE', '4', '0987654321', '2021-22', 'Chittagong', 'M.S'])
+    writer.writerow(['john@example.com', '123456', 'ST001', 'CSE', '2-1', '0123456789', '2020-21', 'Dhaka', 'B.Sc'])
+    writer.writerow(['jane@example.com', '123456', 'ST002', 'EEE', '4-1', '0987654321', '2021-22', 'Chittagong', 'M.S'])
 
     return response
 
@@ -354,33 +354,48 @@ def student_bulk_upload(request):
         reader = csv.DictReader(decoded_file)
 
         for row in reader:
-            email = row['email']
-            password = row['password']
-            student_id = row['student_id']
-            department = row.get('department', '')
-            semester = row.get('semester', '')
-            phone = row.get('phone', '')
-            session = row.get('session', '')
-            address = row.get('address', '')
-            program = row.get('program', '')
+            try:
+                email = row['email']
+                password = row['password']
+                student_id = row['student_id']
+                department = row.get('department', '')
+                semester_str = row.get('semester', '')
+                phone = row.get('phone', '')
+                session = row.get('session', '')
+                address = row.get('address', '')
+                program = row.get('program', '')
 
-            user, created = User.objects.get_or_create(email=email)
-            if created:
-                user.set_password(password)
-                user.save()
+                # Get or create user
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={'role': 'student'}
+                )
+                if created:
+                    user.set_password(password)
+                    user.save()
 
-            StudentProfile.objects.update_or_create(
-                user=user,
-                defaults={
-                    'student_id': student_id,
-                    'department': department,
-                    'semester': semester,
-                    'phone': phone,
-                    'session': session,
-                    'address': address,
-                    'program': program,
-                }
-            )
+                # Get or create semester instance
+                semester = None
+                if semester_str:
+                    semester, _ = Semester.objects.get_or_create(name=semester_str)
+
+                # Create or update student profile
+                StudentProfile.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        'student_id': student_id,
+                        'department': department,
+                        'semester': semester,
+                        'phone': phone,
+                        'session': session,
+                        'address': address,
+                        'program': program,
+                    }
+                )
+
+            except Exception as e:
+                messages.error(request, f"Error processing student {row.get('student_id', 'unknown')}: {str(e)}")
+                continue
 
         messages.success(request, "Students uploaded successfully.")
         return redirect('student_list')
