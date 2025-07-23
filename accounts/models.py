@@ -60,6 +60,7 @@ class StudentProfile(models.Model):
 
 class FacultyProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100)
     designation = models.CharField(max_length=100)
 
@@ -71,7 +72,7 @@ class Course(models.Model):
     course_code = models.CharField(max_length=20, unique=True)
     course_name = models.CharField(max_length=100)
     credit = models.DecimalField(max_digits=4, decimal_places=2)
-    semester = models.PositiveIntegerField()
+    semester = models.ForeignKey('academics.Semester', on_delete=models.CASCADE)
     department = models.CharField(max_length=100)
 
     def __str__(self):
