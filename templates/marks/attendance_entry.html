@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">Enter Attendance Marks</h4>
+    </div>
+    <div class="card-body">
+
+      <!-- Semester Selection -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-4">
+                    <label for="semester" class="form-label">Select Semester</label>
+                    <select id="semester" class="custom-select"">
+                        <option value="">-- Select Semester --</option>
+                        {% for sem in semesters %}
+                            <option value="{{ sem.id }}">{{ sem.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <!-- Course Selection -->
+                <div class="mb-4">
+                    <label for="course" class="form-label">Select Course</label>
+                    <select id="course" class="custom-select">
+                        <option value="">-- Select Course --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+      <!-- Student Marks Table -->
+      <div id="students-container" class="mt-4"></div>
+
+      <!-- Submit Button -->
+      <div class="text-end mt-4">
+        <button id="submit-btn" class="btn btn-sm btn-primary">Submit Marks</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  $('#semester').change(function () {
+    const semesterId = $(this).val();
+    $('#course').html('<option>Loading...</option>');
+    $.get('/assessments/get-courses/', { semester_id: semesterId }, function (data) {
+      let options = '<option value="">-- Select Course --</option>';
+      data.forEach(course => {
+        options += `<option value="${course.id}">${course.course_code} - ${course.course_name}</option>`;
+      });
+      $('#course').html(options);
+    });
+  });
+
+  $('#course').change(function () {
+    const semesterId = $('#semester').val();
+    const courseId = $(this).val();
+    $('#students-container').html('<p>Loading students...</p>');
+
+    $.get('/assessments/get-students/', {
+      semester_id: semesterId,
+      course_id: courseId
+    }, function (students) {
+      if (students.length === 0) {
+        $('#students-container').html('<p class="text-muted">No students found for this course.</p>');
+        return;
+      }
+
+      let html = `
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Student ID</th>
+                <th>Attendance Mark</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      students.forEach(stu => {
+        html += `
+          <tr>
+            <td>${stu.student_id}</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <input type="number" class="form-control form-control-sm mark-input" data-id="${stu.id}"
+                       value="${stu.mark ?? ''}" min="0" max="10" step="0.01" style="width: 100px;">
+                <span class="ms-2 text-muted">/10</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      $('#students-container').html(html);
+    });
+  });
+
+  $('#submit-btn').click(function () {
+    const marks = [];
+    $('.mark-input').each(function () {
+      marks.push({
+        student_id: $(this).data('id'),
+        mark: $(this).val()
+      });
+    });
+
+    $.ajax({
+      url: '/assessments/save-attendance/',
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      contentType: 'application/json',
+      data: JSON.stringify({
+        semester_id: $('#semester').val(),
+        course_id: $('#course').val(),
+        marks: marks
+      }),
+      success: function (res) {
+        alert('Marks saved successfully!');
+      },
+      error: function () {
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  });
+</script>
+{% endblock %}
