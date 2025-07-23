@@ -16,9 +16,15 @@ from django.utils.encoding import force_str
 from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import User, StudentProfile, Course, CourseAssignment, FacultyProfile, StudentCourseEnrollment
+from academics.models import Semester
 import csv
 from django.http import HttpResponse
 from .forms import CourseForm, CourseAssignmentForm, FacultyCreationForm, StudentCourseEnrollmentForm
+import pandas as pd
+from django.http import FileResponse, Http404
+import os
+from django.conf import settings
+from io import BytesIO
 
 
 # Create your views here.
@@ -271,38 +277,24 @@ def is_admin(user):
 # List/Search Students
 @login_required
 def student_list(request):
-    query = request.GET.get('q')
-    if query:
-        students = StudentProfile.objects.filter(user__email__icontains=query)
-    else:
-        students = StudentProfile.objects.all()
+    students = StudentProfile.objects.all()
     return render(request, 'students/student_list.html', {'students': students})
 
 
 # Add Student
 @login_required
 def add_student(request):
-    if request.method == 'POST':
-        print('data', request.body)
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+    if request.method == "POST":
+        # Collect form data
         student_id = request.POST.get('student_id')
+        email = request.POST.get('email')
         department = request.POST.get('department')
-        semester = request.POST.get('semester')
+        semester_id = request.POST.get('semester')
         phone = request.POST.get('phone')
         address = request.POST.get('address')
         session = request.POST.get('session')
         program = request.POST.get('program')
-
-        print("Parsed POST data:")
-        print("Email:", email)
-        print("Password:", password)
-        print("Student ID:", student_id)
-
-        if User.objects.filter(email=email).exists():
-            print("⚠️ Email already exists:", email)
-            messages.error(request, "Email already exists.")
-            return redirect('add_student')
+        password = request.POST.get('password')
 
         try:
             user = User.objects.create(
@@ -311,7 +303,8 @@ def add_student(request):
             )
             user.set_password(password)
             user.save()
-            print("✅ User created:", user.email)
+
+            semester = Semester.objects.get(id=semester_id)
 
             StudentProfile.objects.create(
                 user=user,
@@ -323,15 +316,17 @@ def add_student(request):
                 session=session,
                 program=program
             )
-            print("Student profile created for:", user.email)
 
             messages.success(request, "Student added successfully.")
-        except Exception as e:
-            print("Error occurred:", str(e))
-            messages.error(request, "Something went wrong while creating student.")
-        return redirect('student_list')
+            return redirect('add_student')
 
-    return render(request, 'students/add_students.html')
+        except Semester.DoesNotExist:
+            messages.error(request, "Invalid semester selected.")
+        except Exception as e:
+            messages.error(request, f"Something went wrong: {e}")
+
+    semesters = Semester.objects.all()
+    return render(request, 'students/add_students.html', {'semesters': semesters})
 
 
 @login_required
@@ -442,13 +437,31 @@ def delete_student(request, student_id):
 # Course add view
 def course_add(request):
     if request.method == 'POST':
-        form = CourseForm(request.POST)
-        if form.is_valid():
-            form.save()
+        course_code = request.POST.get('course_code')
+        course_name = request.POST.get('course_name')
+        credit = request.POST.get('credit')
+        semester_id = request.POST.get('semester')
+        department = request.POST.get('department')
+
+        try:
+            semester = Semester.objects.get(id=semester_id)
+
+            Course.objects.create(
+                course_code=course_code,
+                course_name=course_name,
+                credit=credit,
+                semester=semester,
+                department=department
+            )
+            messages.success(request, "Course added successfully.")
             return redirect('course_list')
-    else:
-        form = CourseForm()
-    return render(request, 'courses/course_add.html', {'form': form})
+        except Semester.DoesNotExist:
+            messages.error(request, "Invalid semester selected.")
+        except Exception as e:
+            messages.error(request, f"Error adding course: {e}")
+
+    semesters = Semester.objects.all()
+    return render(request, 'courses/course_add.html', {'semesters': semesters})
 
 # Course list view
 def course_list(request):
@@ -456,36 +469,187 @@ def course_list(request):
     return render(request, 'courses/course_list.html', {'courses': courses})
 
 
+def course_bulk_upload(request):
+    if request.method == 'POST' and request.FILES.get('upload_file'):
+        file = request.FILES['upload_file']
+        try:
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+
+            # Normalize column names to avoid leading/trailing spaces
+            df.columns = df.columns.str.strip()
+
+            for _, row in df.iterrows():
+                semester_obj, _ = Semester.objects.get_or_create(name=str(row['Semester']).strip())
+
+                Course.objects.update_or_create(
+                    course_code=str(row['Course Code']).strip(),
+                    defaults={
+                        'course_name': str(row['Course Name']).strip(),
+                        'credit': float(row['Credit']),
+                        'semester': semester_obj,
+                        'department': str(row['Department']).strip()
+                    }
+                )
+            messages.success(request, "Courses uploaded successfully.")
+        except Exception as e:
+            messages.error(request, f"Upload failed: {str(e)}")
+
+        return redirect('course_bulk_upload')
+
+    return render(request, 'courses/course_bulk_upload.html')
+
+
+
+def download_course_template(request):
+    file_path = os.path.join(settings.BASE_DIR, 'static', 'uploads', 'course_template.xlsx')
+    
+    if not os.path.exists(file_path):
+        raise Http404("Template not found.")
+    
+    return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='course_template.xlsx')
+
+
 def assign_faculty_to_course(request):
+    courses = Course.objects.all()
+    faculties = FacultyProfile.objects.select_related('user').all()
+
     if request.method == 'POST':
-        form = CourseAssignmentForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('assigned_courses_list')
-    else:
-        form = CourseAssignmentForm()
-    return render(request, 'courses/assign_faculty.html', {'form': form})
+        if 'upload_excel' in request.POST:
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                return render(request, 'courses/assign_faculty.html', {
+                    'courses': courses, 'faculties': faculties,
+                    'error': 'No file uploaded'
+                })
+
+            try:
+                df = pd.read_excel(excel_file)
+                for _, row in df.iterrows():
+                    course_code = str(row['course_code']).strip()
+                    faculty_email = str(row['faculty_email']).strip()
+
+                    try:
+                        course = Course.objects.get(course_code=course_code)
+                        faculty = FacultyProfile.objects.select_related('user').get(user__email=faculty_email)
+                        CourseAssignment.objects.get_or_create(course=course, faculty=faculty)
+                    except Course.DoesNotExist:
+                        messages.error(request, f"Course not found: {course_code}")
+                    except FacultyProfile.DoesNotExist:
+                        messages.error(request, f"Faculty not found: {faculty_email}")
+
+                messages.success(request, "Faculty assignments uploaded successfully.")
+                return redirect('assigned_courses_list')
+
+            except Exception as e:
+                return render(request, 'courses/assign_faculty.html', {
+                    'courses': courses, 'faculties': faculties,
+                    'error': str(e)
+                })
+
+        else:
+            # manual form post
+            course_id = request.POST.get('course_id')
+            faculty_id = request.POST.get('faculty_id')
+
+            try:
+                course = Course.objects.get(id=course_id)
+                faculty = FacultyProfile.objects.get(id=faculty_id)
+                CourseAssignment.objects.get_or_create(course=course, faculty=faculty)
+                messages.success(request, "Course assigned successfully.")
+                return redirect('assigned_courses_list')
+            except Exception as e:
+                messages.error(request, f"Error: {e}")
+
+    return render(request, 'courses/assign_faculty.html', {
+        'courses': courses,
+        'faculties': faculties
+    })
 
 def assigned_courses_list(request):
     assignments = CourseAssignment.objects.select_related('course', 'faculty').all()
     return render(request, 'courses/assigned_courses_list.html', {'assignments': assignments})
 
+def edit_course_assignment(request, assignment_id):
+    assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+    if request.method == 'POST':
+        course_id = request.POST.get('course')
+        faculty_id = request.POST.get('faculty')
+
+        assignment.course_id = course_id
+        assignment.faculty_id = faculty_id
+        assignment.save()
+        return redirect('assigned_courses_list')
+
+    courses = Course.objects.all()
+    faculty_members = FacultyProfile.objects.all()
+    return render(request, 'courses/edit_assigned_course.html', {
+        'assignment': assignment,
+        'courses': courses,
+        'faculty_members': faculty_members
+    })
+
+def delete_course_assignment(request, assignment_id):
+    assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+    assignment.delete()
+    return redirect('assigned_courses_list')
+
+
 
 # Faculty Create
 def create_faculty(request):
     if request.method == 'POST':
-        form = FacultyCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'A user with this email already exists.')
+        elif not email or not password:
+            messages.error(request, 'Email and password are required.')
+        else:
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                role='faculty'
+            )
+            FacultyProfile.objects.create(user=user)
+            messages.success(request, 'Faculty created successfully.')
             return redirect('faculty_list')
-    else:
-        form = FacultyCreationForm()
-    return render(request, 'faculty/create_faculty.html', {'form': form})
+
+    return render(request, 'faculty/create_faculty.html')
 
 
 def faculty_list(request):
-    faculties = User.objects.filter(role='faculty')
+    faculties = User.objects.filter(role='faculty').select_related('facultyprofile')
+    print('faculties', faculties)
     return render(request, 'faculty/faculty_list.html', {'faculties': faculties})
+
+
+# Edit Faculty
+def edit_faculty(request, faculty_id):
+    user = get_object_or_404(User, id=faculty_id, role='faculty')
+    print('user', user)
+
+    faculty = FacultyProfile.objects.get(user=user)
+    print('faculty', faculty)
+    if request.method == 'POST':
+        print('data', request.POST)
+        faculty.name = request.POST.get('name')
+        faculty.designation = request.POST.get('designation')
+        faculty.department = request.POST.get('department')
+        faculty.email = request.POST.get('email')
+        faculty.save()
+        return redirect('faculty_list')
+    return render(request, 'faculty/edit_faculty.html', {'faculty': faculty})
+
+
+# Delete Faculty
+def delete_faculty(request, faculty_id):
+    faculty = get_object_or_404(User, id=faculty_id, role='faculty')
+    faculty.delete()
+    return redirect('faculty_list')
 
 
 @login_required

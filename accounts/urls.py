@@ -25,14 +25,20 @@ urlpatterns = [
 
     path('courses/add/', views.course_add, name='course_add'),
     path('courses/', views.course_list, name='course_list'),
+    path('courses/bulk-upload/', views.course_bulk_upload, name='course_bulk_upload'),
+    path('courses/template-download/', views.download_course_template, name='download_course_template'),
 
     path('assign-courses/', views.assign_courses_to_student, name='assign_courses_to_student'),
     
     path('courses/assign/', views.assign_faculty_to_course, name='assign_faculty_to_course'),
     path('courses/assignments/', views.assigned_courses_list, name='assigned_courses_list'),
+    path('assignments/edit/<int:assignment_id>/', views.edit_course_assignment, name='edit_course_assignment'),
+    path('assignments/delete/<int:assignment_id>/', views.delete_course_assignment, name='delete_course_assignment'),
 
     path('faculty/create/', views.create_faculty, name='create_faculty'),
     path('faculty/', views.faculty_list, name='faculty_list'),
+    path('faculty/edit/<int:faculty_id>/', views.edit_faculty, name='edit_faculty'),
+    path('faculty/delete/<int:faculty_id>/', views.delete_faculty, name='delete_faculty'),
 
 
     # API views
