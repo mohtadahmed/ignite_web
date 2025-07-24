@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">CT Marks List</h4>
+    </div>
+
+    <div class="card-body">
+      <table id="ctMarksTable" class="table table-bordered table-striped">
+        <thead class="table-secondary">
+          <tr>
+            <th>Semester</th>
+            <th>Course</th>
+            <th>Student ID</th>
+            <th>Student Name</th>
+            <th>CT Title</th>
+            <th>Mark</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mark in ct_marks %}
+          <tr>
+            <td>{{ mark.semester.name }}</td>
+            <td>{{ mark.course.course_code }} - {{ mark.course.course_name }}</td>
+            <td>{{ mark.student.student_id }}</td>
+            <td>{{ mark.student.name }}</td>
+            <td>{{ mark.title }}</td>
+            <td>{{ mark.mark }}</td>
+            <td>{{ mark.date }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
