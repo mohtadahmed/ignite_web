@@ -4,7 +4,10 @@ from . import views
 
 urlpatterns = [
     # add your URL paths here in the future
-    path('add-ct-marks/', views.add_ct_marks, name='add_ct_marks'),
+    path('add-ct-marks/', views.enter_ct_marks, name='add_ct_marks'),
+    path('get-ct-marks/', views.get_ct_marks, name='get_ct_marks'),
+    path('save-ct-marks/', views.save_ct_marks, name='save_ct_marks'),
+
     path('add-assignment-marks/', views.add_assignment_marks, name='add_assignment_marks'),
     path('add-quiz-marks/', views.add_quiz_marks, name='add_quiz_marks'),
     path('ct-marks/', views.ct_marks_list, name='ct_marks_list'),

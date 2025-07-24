@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404, redirect
 from .models import *
 from .forms import *
 from django.contrib import messages
@@ -6,6 +6,7 @@ from accounts.models import CourseAssignment
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
+from django.urls import reverse
 
 
 # Create your views here.
@@ -37,10 +38,6 @@ def add_quiz_marks(request):
         return redirect('quiz_marks_list')
     return render(request, 'assessments/add_quiz_marks.html')
 
-
-def ct_marks_list(request):
-    ct_marks = CTMark.objects.select_related('student', 'course').all()
-    return render(request, 'assessments/ct_marks_list.html', {'ct_marks': ct_marks})
 
 def assignment_marks_list(request):
     assignment_marks = AssignmentMark.objects.select_related('student', 'course').all()
@@ -166,3 +163,71 @@ def save_attendance_marks(request):
                 defaults={'mark': mark}
             )
         return JsonResponse({'status': 'success'})
+    
+
+# CT Marks Section
+def enter_ct_marks(request):
+    semesters = Semester.objects.all()
+    return render(request, 'marks/add_ct_marks.html', {'semesters': semesters})
+
+
+def get_ct_marks(request):
+    semester_id = request.GET.get('semester_id')
+    course_id = request.GET.get('course_id')
+
+    if not semester_id or not course_id:
+        return JsonResponse({'error': 'Missing parameters'}, status=400)
+
+    ct_marks = CTMark.objects.filter(course_id=course_id, semester_id=semester_id)
+
+    data = {}
+    for mark in ct_marks:
+        key = f"{mark.student.id}_ct{mark.title[-1]}"  # Assuming title is like 'CT1', 'CT2'
+        data[key] = float(mark.mark)
+
+    return JsonResponse({'ct_marks': data})
+
+
+@csrf_exempt
+def save_ct_marks(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print('data', data)
+
+            semester_id = data.get('semester_id')
+            course_id = data.get('course_id')
+            marks = data.get('marks', [])
+
+            semester = get_object_or_404(Semester, id=semester_id)
+            course = get_object_or_404(Course, id=course_id)
+
+            for entry in marks:
+                student_id = entry.get('student_id')
+                ct_number = entry.get('ct_number')  # e.g., 1
+                mark = entry.get('mark')
+
+                student = get_object_or_404(StudentProfile, id=student_id)
+                title = f"CT{ct_number}"  # e.g., CT1, CT2
+
+                CTMark.objects.update_or_create(
+                    student=student,
+                    course=course,
+                    semester=semester,
+                    title=title,
+                    defaults={'mark': mark}
+                )
+
+            return JsonResponse({'success': True, 'redirect_url': reverse('ct_marks_list')})
+        
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+def ct_marks_list(request):
+    ct_marks = CTMark.objects.select_related('student', 'course').all()
+    return render(request, 'marks/ct_marks_list.html', {'ct_marks': ct_marks})
