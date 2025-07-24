@@ -13,7 +13,7 @@ class CTMark(models.Model):
     date = models.DateField(default=timezone.now)
 
     class Meta:
-        unique_together = ['student', 'course', 'semester']
+        unique_together = ['student', 'course', 'semester', 'title']
 
     def __str__(self):
         return f"CT: {self.title} - {self.student.student_id} - {self.course.course_code}"
