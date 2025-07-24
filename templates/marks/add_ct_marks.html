@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">Enter CT Marks</h4>
+    </div>
+    <div class="card-body">
+
+      <!-- Semester & Course Selection -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-4">
+            <label for="semester" class="form-label">Select Semester</label>
+            <select id="semester" class="custom-select">
+              <option value="">-- Select Semester --</option>
+              {% for sem in semesters %}
+                <option value="{{ sem.id }}">{{ sem.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="mb-4">
+            <label for="course" class="form-label">Select Course</label>
+            <select id="course" class="custom-select">
+              <option value="">-- Select Course --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- CT Marks Table -->
+      <div id="ct-marks-panel" class="mt-4 d-none">
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+              <tr id="ct-marks-header">
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>
+                  CT 1 <small class="text-muted">(out of 18)</small>
+                  <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="addCTColumn()">+</button>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="ct-marks-body">
+              <!-- Rows added dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end">
+          <button id="submit-ct-btn" class="btn btn-sm btn-primary">Submit CT Marks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#semester').val('');
+        $('#course').html('<option value="">-- Select Course --</option>');
+        $('#ct-marks-panel').addClass('d-none');
+    });
+
+    let currentCT = 1;
+    let students = [];
+
+    $('#semester').change(function () {
+        const semesterId = $(this).val();
+        $('#course').html('<option>Loading...</option>');
+        $.get('/assessments/get-courses/', { semester_id: semesterId }, function (data) {
+            let options = '<option value="">-- Select Course --</option>';
+            data.forEach(course => {
+            options += `<option value="${course.id}">${course.course_code} - ${course.course_name}</option>`;
+            });
+            $('#course').html(options);
+        });
+    });
+
+    $('#course').change(function () {
+        const semesterId = $('#semester').val();
+        const courseId = $(this).val();
+
+        $('#ct-marks-panel').addClass('d-none');
+        $('#ct-marks-body').html('<tr><td colspan="3">Loading students...</td></tr>');
+
+        // First get both students and existing CT marks
+        $.when(
+            $.get('/assessments/get-students/', {
+                semester_id: semesterId,
+                course_id: courseId
+            }),
+            $.get('/assessments/get-ct-marks/', {
+                semester_id: semesterId,
+                course_id: courseId
+            })
+        ).done(function (studentsRes, ctMarksRes) {
+            students = studentsRes[0];
+            const ctMarks = ctMarksRes[0].ct_marks;
+
+            // Determine the max CT number
+            let maxCT = 1;
+            Object.keys(ctMarks).forEach(key => {
+                const match = key.match(/ct(\d+)$/);
+                if (match) {
+                    const ctNum = parseInt(match[1]);
+                    if (ctNum > maxCT) maxCT = ctNum;
+                }
+            });
+
+            currentCT = maxCT;
+            renderCTTableWithMarks(ctMarks); // Pass CT data for pre-fill
+
+            $('#ct-marks-panel').removeClass('d-none');
+        });
+    });
+
+
+    function renderCTTable() {
+        const tbody = $('#ct-marks-body');
+        const header = $('#ct-marks-header');
+        currentCT = 1;
+
+        // Reset header
+        header.html(`
+            <th>Student ID</th>
+            <th>
+            CT 1 <small class="text-muted">(out of 18)</small>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="addCTColumn()">+</button>
+            </th>
+        `);
+
+        // Reset body
+        tbody.empty();
+        students.forEach(stu => {
+            tbody.append(`
+            <tr>
+                <td>${stu.student_id}</td>
+                <td><input type="number" class="form-control form-control-sm" name="${stu.id}_ct1" min="0" max="10" step="0.01"></td>
+            </tr>
+            `);
+        });
+    }
+
+    function renderCTTableWithMarks(ctMarks) {
+        const tbody = $('#ct-marks-body');
+        const header = $('#ct-marks-header');
+
+        // Build header
+        let headerHtml = `<th>Student ID</th><th>Student Name</th>`;
+        for (let i = 1; i <= currentCT; i++) {
+            const addBtn = (i === currentCT)
+                ? `<button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="addCTColumn()">+</button>`
+                : '';
+            headerHtml += `<th>CT ${i} <small class="text-muted">(out of 18)</small> ${addBtn}</th>`;
+        }
+        header.html(headerHtml);
+
+        // Build body
+        tbody.empty();
+        students.forEach(stu => {
+            let row = `<tr><td>${stu.student_id}</td><td>${stu.name}</td>`;
+            for (let i = 1; i <= currentCT; i++) {
+                const fieldName = `${stu.id}_ct${i}`;
+                const value = ctMarks[fieldName] ?? '';
+                row += `<td><input type="number" class="form-control form-control-sm" name="${fieldName}" min="0" max="10" step="0.01" value="${value}"></td>`;
+            }
+            row += '</tr>';
+            tbody.append(row);
+        });
+    }
+
+
+    function addCTColumn() {
+        currentCT++;
+        const header = $('#ct-marks-header');
+        header.find('th:last-child button').remove();
+        header.append(`
+            <th>
+            CT ${currentCT} <small class="text-muted">(out of 18)</small>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="addCTColumn()">+</button>
+            </th>
+        `);
+
+        $('#ct-marks-body tr').each((index, row) => {
+            const stu = students[index];
+            $(row).append(`
+            <td><input type="number" class="form-control form-control-sm" name="${stu.id}_ct${currentCT}" min="0" max="10" step="0.01"></td>
+            `);
+        });
+    }
+
+    function loadCTMarks(semesterId, courseId) {
+        $.get('/assessments/get-ct-marks/', {
+            semester_id: semesterId,
+            course_id: courseId
+        }, function (res) {
+            const ctMarks = res.ct_marks;
+            console.log('ct marks', ctMarks);
+
+            Object.keys(ctMarks).forEach(key => {
+                const value = ctMarks[key];
+                const input = $(`input[name='${key}']`);
+                if (input.length) {
+                    input.val(value);
+                }
+            });
+        });
+    }
+
+
+    $('#submit-ct-btn').click(function () {
+        const marks = [];
+        const semesterId = $('#semester').val();
+        const courseId = $('#course').val();
+
+        for (let i = 1; i <= currentCT; i++) {
+            students.forEach(stu => {
+                const val = $(`input[name='${stu.id}_ct${i}']`).val();
+                if (val !== '') {
+                    marks.push({
+                        student_id: stu.id,
+                        ct_number: i,
+                        mark: parseFloat(val)
+                    });
+                }
+            });
+        }
+
+        $.ajax({
+            url: '/assessments/save-ct-marks/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            contentType: 'application/json',
+            data: JSON.stringify({
+                semester_id: semesterId,
+                course_id: courseId,
+                marks: marks
+            }),
+            success: function (res) {
+                alert('CT marks saved successfully!');
+                window.location.reload();
+            },
+            error: function () {
+                alert('Error saving CT marks.');
+            }
+        });
+    });
+</script>
+{% endblock %}
