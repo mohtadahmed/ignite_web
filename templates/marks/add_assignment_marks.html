@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-5">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">Enter Assignment Marks</h4>
+    </div>
+    <div class="card-body">
+
+      <!-- Semester & Course Selection -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-4">
+            <label for="semester" class="form-label">Select Semester</label>
+            <select id="semester" class="custom-select">
+              <option value="">-- Select Semester --</option>
+              {% for sem in semesters %}
+                <option value="{{ sem.id }}">{{ sem.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="mb-4">
+            <label for="course" class="form-label">Select Course</label>
+            <select id="course" class="custom-select">
+              <option value="">-- Select Course --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignment Panel -->
+      <div id="assignment-panel" class="mt-4 d-none">
+        <div class="mb-3 row">
+          <div class="col-md-6">
+            <label>Assignment Title</label>
+            <select id="assignment-title" class="form-control">
+              <option value="">-- Select Assignment --</option>
+            </select>
+            <input type="text" id="new-assignment-title" class="form-control mt-2 d-none" placeholder="Enter new title">
+          </div>
+          <div class="col-md-6">
+            <label>Date</label>
+            <input type="date" id="assignment-date" class="form-control" value="{{ today|date:'Y-m-d' }}">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered text-center align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Mark (out of 10)</th>
+              </tr>
+            </thead>
+            <tbody id="assignment-marks-body">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-end">
+          <button id="submit-assignment-btn" class="btn btn-sm btn-primary">Submit Assignment Marks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+let students = [];
+
+$(document).ready(function () {
+  $('#semester').val('');
+  $('#course').html('<option value="">-- Select Course --</option>');
+  $('#assignment-panel').addClass('d-none');
+});
+
+$('#semester').change(function () {
+  const semesterId = $(this).val();
+  $('#course').html('<option>Loading...</option>');
+  $.get('/assessments/get-courses/', { semester_id: semesterId }, function (data) {
+    let options = '<option value="">-- Select Course --</option>';
+    data.forEach(course => {
+      options += `<option value="${course.id}">${course.course_code} - ${course.course_name}</option>`;
+    });
+    $('#course').html(options);
+  });
+});
+
+
+$('#course').change(function () {
+  const semesterId = $('#semester').val();
+  const courseId = $(this).val();
+
+  $('#assignment-marks-body').html('<tr><td colspan="3">Loading students...</td></tr>');
+
+  $.get('/assessments/get-students/', {
+    semester_id: semesterId,
+    course_id: courseId
+  }, function (data) {
+    students = data;
+    renderAssignmentTable();
+    $('#assignment-panel').removeClass('d-none');
+
+    // ⬇️ Step 1: Auto-fetch latest assignment title
+    $.get('/assessments/get_assignment_titles/', {
+      semester_id: semesterId,
+      course_id: courseId
+    }, function (res) {
+      if (res.success) {
+        const titleDropdown = $('#assignment-title');
+        titleDropdown.html('<option value="">-- Select Assignment --</option>');
+
+        res.titles.forEach(title => {
+          titleDropdown.append(`<option value="${title}">${title}</option>`);
+        });
+
+        titleDropdown.append(`<option value="__new__">+ New Assignment</option>`);
+      }
+    });
+  });
+});
+
+
+function fetchAssignmentMarks(semesterId, courseId, title) {
+  $.get('/assessments/get_assignment_marks/', {
+    semester_id: semesterId,
+    course_id: courseId,
+    title: title
+  }, function (res) {
+    if (res.success) {
+      const markMap = {};
+      res.marks.forEach(m => {
+        markMap[parseInt(m.student_id)] = m.mark;
+      });
+
+      students.forEach(stu => {
+        const input = $(`input[name="${stu.id}_mark"]`);
+        const markValue = markMap[parseInt(stu.id)] ?? '';
+        input.val(markValue);
+      });
+    }
+  });
+}
+
+
+$('#assignment-title').change(function () {
+  const selected = $(this).val();
+
+  if (selected === '__new__') {
+    $('#new-assignment-title').removeClass('d-none');
+    $('#assignment-marks-body input').val('');
+  } else if (selected) {
+    $('#new-assignment-title').addClass('d-none');
+    const semesterId = $('#semester').val();
+    const courseId = $('#course').val();
+    fetchAssignmentMarks(semesterId, courseId, selected);
+  } else {
+    $('#new-assignment-title').addClass('d-none');
+    $('#assignment-marks-body input').val('');
+  }
+});
+
+
+
+function renderAssignmentTable() {
+  const tbody = $('#assignment-marks-body');
+  tbody.empty();
+
+  students.forEach(stu => {
+    tbody.append(`
+      <tr>
+        <td>${stu.student_id}</td>
+        <td>${stu.name}</td>
+        <td><input type="number" class="form-control form-control-sm" name="${stu.id}_mark" min="0" max="10" step="0.01"></td>
+      </tr>
+    `);
+  });
+}
+
+$('#submit-assignment-btn').click(function () {
+  const semesterId = $('#semester').val();
+  const courseId = $('#course').val();
+  let title = $('#assignment-title').val();
+  if (title === '__new__') {
+    title = $('#new-assignment-title').val().trim();
+  }
+  if (!title) {
+    alert('Assignment title is required.');
+    return;
+  }
+
+  const date = $('#assignment-date').val();
+  const marks = [];
+
+  if (!title) {
+    alert('Assignment title is required.');
+    return;
+  }
+
+  students.forEach(stu => {
+    const value = $(`input[name="${stu.id}_mark"]`).val();
+    if (value !== '') {
+      marks.push({
+        student_id: stu.id,
+        mark: parseFloat(value)
+      });
+    }
+  });
+
+  $.ajax({
+    url: '/assessments/save-assignment-marks/',
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    contentType: 'application/json',
+    data: JSON.stringify({
+      semester_id: semesterId,
+      course_id: courseId,
+      title: title,
+      date: date,
+      marks: marks
+    }),
+    success: function () {
+      alert('Assignment marks saved successfully!');
+      window.location.reload();
+    },
+    error: function () {
+      alert('Error saving assignment marks.');
+    }
+  });
+});
+</script>
+{% endblock %}
