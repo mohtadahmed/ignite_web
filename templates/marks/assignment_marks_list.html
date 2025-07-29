@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card">
+    <div class="card-header">
+      <h3>Assignment Marks List</h3>
+    </div>
+    <div class="card-body">
+      <table class="table table-bordered table-striped table-hover" id="assignment-table">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Semester</th>
+            <th>Course</th>
+            <th>Assignment Title</th>
+            <th>Mark</th>
+            <th>Updated At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mark in assignment_marks %}
+            <tr>
+              <td>{{ mark.student.student_id }}</td>
+              <td>{{ mark.student.name }}</td>
+              <td>{{ mark.semester.name }}</td>
+              <td>{{ mark.course.course_code }}</td>
+              <td>{{ mark.title }}</td>
+              <td>{{ mark.mark }}</td>
+              <td>{{ mark.updated_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
