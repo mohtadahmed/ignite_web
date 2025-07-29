@@ -26,9 +26,10 @@ class AssignmentMark(models.Model):
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True, blank=True)
     mark = models.DecimalField(max_digits=5, decimal_places=2)
     date = models.DateField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['student', 'course', 'semester']
+        unique_together = ['student', 'course', 'semester', 'title']
 
     def __str__(self):
         return f"Assignment: {self.title} - {self.student.student_id} - {self.course.course_code}"
