@@ -8,7 +8,13 @@ urlpatterns = [
     path('get-ct-marks/', views.get_ct_marks, name='get_ct_marks'),
     path('save-ct-marks/', views.save_ct_marks, name='save_ct_marks'),
 
+    # path('add-assignment-marks/', views.add_assignment_marks, name='add_assignment_marks'),
     path('add-assignment-marks/', views.add_assignment_marks, name='add_assignment_marks'),
+    path('get_assignment_marks/', views.get_assignment_marks, name='get_assignment_marks'),
+    path('get_latest_assignment_title/', views.get_latest_assignment_title, name='get_latest_assignment_title'),
+    path('get_assignment_titles/', views.get_assignment_titles, name='get_assignment_titles'),
+    path('save-assignment-marks/', views.save_assignment_marks, name='save_assignment_marks'),
+    
     path('add-quiz-marks/', views.add_quiz_marks, name='add_quiz_marks'),
     path('ct-marks/', views.ct_marks_list, name='ct_marks_list'),
     path('assignment-marks/', views.assignment_marks_list, name='assignment_marks_list'),

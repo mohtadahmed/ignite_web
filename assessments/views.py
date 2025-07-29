@@ -20,15 +20,6 @@ def add_ct_marks(request):
         return redirect('ct_marks_list')
     return render(request, 'assessments/add_ct_marks.html')
 
-def add_assignment_marks(request):
-    if request.method == 'POST':
-        titles = request.POST.getlist('assignment_title[]')
-        marks = request.POST.getlist('assignment_marks[]')
-        for title, mark in zip(titles, marks):
-            # Save each Assignment mark
-            pass
-        return redirect('assignment_marks_list')
-    return render(request, 'assessments/add_assignment_marks.html')
 
 def add_quiz_marks(request):
     if request.method == 'POST':
@@ -41,7 +32,7 @@ def add_quiz_marks(request):
 
 def assignment_marks_list(request):
     assignment_marks = AssignmentMark.objects.select_related('student', 'course').all()
-    return render(request, 'assessments/assignment_marks_list.html', {'assignment_marks': assignment_marks})
+    return render(request, 'marks/assignment_marks_list.html', {'assignment_marks': assignment_marks})
 
 def quiz_marks_list(request):
     quiz_marks = QuizMark.objects.select_related('student', 'course').all()
@@ -231,3 +222,122 @@ def save_ct_marks(request):
 def ct_marks_list(request):
     ct_marks = CTMark.objects.select_related('student', 'course').all()
     return render(request, 'marks/ct_marks_list.html', {'ct_marks': ct_marks})
+
+
+# Assignment Marks Section
+def add_assignment_marks(request):
+    semesters = Semester.objects.all()
+    return render(request, 'marks/add_assignment_marks.html', {
+        'semesters': semesters,
+        'today': timezone.now().date()
+    })
+
+
+def get_assignment_marks(request):
+    semester_id = request.GET.get('semester_id')
+    course_id = request.GET.get('course_id')
+    title = request.GET.get('title')
+
+    if not (semester_id and course_id and title):
+        print('missing')
+        return JsonResponse({'success': False, 'message': 'Missing parameters'}, status=400)
+
+    marks = AssignmentMark.objects.filter(
+        semester_id=semester_id,
+        course_id=course_id,
+        title=title
+    ).select_related('student') 
+
+    data = []
+    for mark in marks:
+        data.append({
+            'student_id': mark.student.id,
+            'mark': float(mark.mark)
+        })
+
+    return JsonResponse({'success': True, 'marks': data})
+
+
+def get_latest_assignment_title(request):
+    semester_id = request.GET.get('semester_id')
+    course_id = request.GET.get('course_id')
+
+    if not (semester_id and course_id):
+        return JsonResponse({'success': False, 'message': 'Missing semester or course ID'}, status=400)
+
+    # Get latest assignment title used for this course+semester
+    latest_assignment = AssignmentMark.objects.filter(
+        semester_id=semester_id,
+        course_id=course_id
+    ).order_by('-id').first()
+
+    if latest_assignment:
+        return JsonResponse({'success': True, 'title': latest_assignment.title})
+    else:
+        return JsonResponse({'success': False, 'message': 'No assignment found'})
+    
+
+
+def get_assignment_titles(request):
+    semester_id = request.GET.get('semester_id')
+    course_id = request.GET.get('course_id')
+
+    if not (semester_id and course_id):
+        return JsonResponse({'success': False, 'message': 'Missing data'}, status=400)
+
+    titles = AssignmentMark.objects.filter(
+        semester_id=semester_id,
+        course_id=course_id
+    ).values_list('title', flat=True).distinct()
+
+    return JsonResponse({'success': True, 'titles': list(titles)})
+
+
+@csrf_exempt
+def save_assignment_marks(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            semester_id = data.get('semester_id')
+            course_id = data.get('course_id')
+            title = data.get('title')
+            marks_data = data.get('marks')
+
+            semester = Semester.objects.get(id=semester_id)
+            course = Course.objects.get(id=course_id)
+
+            for item in marks_data:
+                student_id = item.get('student_id')
+                mark = item.get('mark')
+
+                student = StudentProfile.objects.get(id=student_id)
+
+                try:
+                    # Try to get existing mark entry
+                    assignment_mark = AssignmentMark.objects.get(
+                        student=student,
+                        course=course,
+                        semester=semester,
+                        title=title
+                    )
+                    # Only update the mark (not the date)
+                    assignment_mark.mark = mark
+                    assignment_mark.save()
+                except AssignmentMark.DoesNotExist:
+                    # Create new entry with date
+                    AssignmentMark.objects.create(
+                        student=student,
+                        course=course,
+                        semester=semester,
+                        title=title,
+                        mark=mark,
+                        date=timezone.now()
+                    )
+
+            return JsonResponse({'success': True, 'message': 'Assignment marks saved successfully'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
