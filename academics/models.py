@@ -1,4 +1,6 @@
 from django.db import models
+from accounts.models import User, Course
+from django.utils import timezone
 
 # Create your models here.
 class Semester(models.Model):
@@ -18,11 +20,59 @@ class Semester(models.Model):
         return self.name
 
 
-class Course(models.Model):
-    name = models.CharField(max_length=255)
-    code = models.CharField(max_length=50, unique=True)
-    credit = models.DecimalField(max_digits=4, decimal_places=2, default=3.00)
-    total_marks = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+class Routine(models.Model):
+    file = models.FileField(upload_to='static/uploads/routine/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return self.file.name
+    
+
+class CourseResource(models.Model):
+    CATEGORY_CHOICES = [
+        ('lecture', 'Lecture Slide / Material'),
+        ('book', 'Book / Reference'),
+        ('note', 'Note'),
+        ('question', 'Question Paper / Practice'),
+        ('link', 'Link'),
+        ('other', 'Other'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='uploads/resources/', blank=True, null=True)
+    external_link = models.URLField(blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+    
+
+class ScheduleItem(models.Model):
+    EXAM_TYPES = [
+        ('CT', 'Class Test'),
+        ('ASSIGNMENT', 'Assignment'),
+        ('QUIZ', 'Quiz'),
+        ('LAB', 'Lab Exam'),
+        ('VIVA', 'Viva'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    exam_type = models.CharField(max_length=20, choices=EXAM_TYPES)
+    scheduled_date = models.DateTimeField()
+    faculty = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_overdue(self):
+        return timezone.now() > self.scheduled_date
+
+    def days_left(self):
+        delta = self.scheduled_date - timezone.now()
+        return delta.days
+
+    def __str__(self):
+        return f"{self.course.name} - {self.exam_type}"
