@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4>Final Exam Marks Entry</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-group mb-3">
+                    <label for="semester">Select Semester:</label>
+                    <select name="semester" id="semester" class="form-control">
+                        <option value="">--- Select Semester ---</option>
+                        {% for semester in semesters %}
+                            <option value="{{ semester.id }}">{{ semester.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="course">Select Course:</label>
+                    <select name="course" id="course" class="form-control" disabled>
+                        <option value="">--- Select Course ---</option>
+                    </select>
+                </div>
+
+                <div id="students-container" style="display: none;">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Final Exam Marks (Out of <span id="max-marks">--</span>)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary">Save Final Marks</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const creditToMaxMarks = {
+        1: 18,
+        2: 36,
+        3: 54,
+        4: 72
+    };
+
+    $('#semester').on('change', function () {
+        const semesterId = $(this).val();
+        if (semesterId) {
+            $.ajax({
+                url: '/assessments/get-courses/',
+                data: { semester_id: semesterId },
+                success: function (response) {
+                    console.log('Courses:', response);
+                    const courseDropdown = $('#course');
+                    courseDropdown.empty().append('<option value="">--- Select Course ---</option>');
+                    response.forEach(course => {
+                        courseDropdown.append(`<option value="${course.id}" data-credit="${course.credit}">${course.course_code} - ${course.course_name}</option>`);
+                    });
+                    courseDropdown.prop('disabled', false);
+                }
+            });
+        }
+    });
+
+    $('#course').on('change', function () {
+        const courseId = $(this).val();
+        const courseCredit = parseFloat($('option:selected', this).data('credit'));
+        const maxMarks = creditToMaxMarks[courseCredit];
+        $('#max-marks').text(maxMarks);
+
+        if (courseId) {
+            $.ajax({
+                url: '/assessments/get_students_by_course/',
+                data: {
+                    course_id: courseId,
+                    semester_id: $('#semester').val()
+                },
+                success: function (response) {
+                    const tbody = $('#students-table-body');
+                    tbody.empty();
+                    response.students.forEach(student => {
+                        tbody.append(`
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="student_ids" value="${student.id}">
+                                    ${student.student_id}
+                                </td>
+                                <td>${student.name}</td>
+                                <td>
+                                    <input type="number" step="0.01" name="marks_${student.id}" class="form-control" max="${maxMarks}">
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    $('#students-container').show();
+                }
+            });
+        }
+    });
+
+    $(document).ready(function () {
+        // Fully reset semester and course dropdowns
+        $('#semester').val('');
+        $('#course').empty().append('<option value="">--- Select Course ---</option>').prop('disabled', true);
+
+        // Clear the max marks display
+        $('#max-marks').text('--');
+
+        // Hide students table
+        $('#students-container').hide();
+
+        // Clear all marks input fields and hidden student IDs
+        $('#students-table-body').empty();
+    });
+
+
+
+</script>
+
+{% endblock %}
