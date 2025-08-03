@@ -55,4 +55,70 @@
 </div>
 
 </div>
+
+<div class="container mt-5">
+  <h2>Welcome, {{ faculty_name }}</h2>
+
+  <!-- Courses -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">My Courses</div>
+    <div class="card-body">
+      <ul class="list-group">
+        {% for course in courses %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ course.name }}
+          <div>
+            <a href="{% url 'upload_resource' course.id %}" class="btn btn-sm btn-success">Upload Resource</a>
+            <a href="{% url 'schedule_event' course.id %}" class="btn btn-sm btn-info">Schedule</a>
+            <a href="{% url 'view_performance' course.id %}" class="btn btn-sm btn-warning">Performance</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Upcoming Schedules -->
+  <div class="card mb-4">
+    <div class="card-header bg-secondary text-white">Upcoming Events</div>
+    <div class="card-body">
+      {% for item in schedule_items %}
+      <div class="alert alert-light d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ item.course.name }}:</strong> {{ item.event_type }} on {{ item.event_date }}
+        </div>
+        <span class="badge bg-danger">
+          {{ item.event_date|timeuntil }} left
+        </span>
+      </div>
+      {% empty %}
+      <p>No upcoming schedules.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recent Resources -->
+  <div class="card">
+    <div class="card-header bg-dark text-white">Recently Shared Resources</div>
+    <div class="card-body">
+      {% for res in resources %}
+      <div class="mb-2">
+        <strong>{{ res.title }}</strong> ({{ res.course.name }})<br>
+        {% if res.file %}
+        <a href="{{ res.file.url }}" class="btn btn-sm btn-outline-primary" download>Download</a>
+        {% endif %}
+        {% if res.link %}
+        <a href="{{ res.link }}" class="btn btn-sm btn-outline-success" target="_blank">Open Link</a>
+        {% endif %}
+        {% if res.note %}
+        <p>{{ res.note }}</p>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p>No resources uploaded yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}
