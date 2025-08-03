@@ -55,10 +55,11 @@ class FinalExamMarkSetup(models.Model):
 class FinalExamMark(models.Model):
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True, blank=True)
     marks_obtained = models.FloatField()
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    setup = models.ForeignKey(FinalExamMarkSetup, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('student', 'course')
@@ -114,3 +115,56 @@ class AttendanceMark(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.course} - {self.semester} - {self.mark}"
+    
+
+class MarkDistribution(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    ct_weight = models.FloatField()
+    attendance_weight = models.FloatField()
+    final_exam_weight = models.FloatField()
+
+    def __str__(self):
+        return f"{self.course.name} Distribution"
+    
+
+class LabMark(models.Model):
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    quiz_viva = models.FloatField(default=0.0)
+    experiment = models.FloatField(default=0.0)
+    attendance = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f'{self.student} - {self.course}'
+    
+
+class ThesisMark(models.Model):
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    internal = models.FloatField()
+    external = models.FloatField()
+    presentation = models.FloatField()
+    total_mark = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f'{self.student} - {self.course}'
+    
+
+class FieldWorkMark(models.Model):
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    field_mark = models.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f"{self.student} - {self.course} - {self.field_mark}"

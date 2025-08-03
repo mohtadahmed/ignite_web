@@ -27,10 +27,28 @@ urlpatterns = [
 
     path('marks_view/', views.marks_view, name='marks_view'),
 
-    path('add-final-exam-marks/', views.add_final_exam_marks, name='add_final_exam_marks'),
+    # path('add-final-exam-marks/', views.add_final_exam_marks, name='add_final_exam_marks'),
 
 
     path('assign-final-marks/', views.assign_final_exam_marks, name='assign_final_exam_marks'),
-    path('add-final-marks/<int:course_id>/', views.add_final_exam_marks, name='add_final_exam_marks'),
+    # path('add-final-marks/<int:course_id>/', views.add_final_exam_marks, name='add_final_exam_marks'),
+
+    path('add_final_exam_mark/', views.add_final_exam_mark, name='add_final_exam_mark'),
+    path('final_result/', views.final_result_panel, name='final_result_panel'),
+    path('set-mark-distribution/', views.set_mark_distribution, name='set_mark_distribution'),
+    path('get_students_by_course/', views.get_students_by_course, name='get_students_by_course'),
+
+    path('student-marksheet/', views.student_marksheet_view, name='student_marksheet'),
+    path('marksheet/', views.generate_marksheet, name='generate_marksheet'),
+
+    path('lab-marks/', views.lab_mark_entry, name='lab_mark_entry'),
+
+    path('add-thesis-mark/', views.add_thesis_mark, name='add_thesis_mark'),
+
+    path('field-work-mark-entry/', views.field_work_mark_entry, name='field_work_mark_entry'),
+
+    path('transcript_view/', views.transcript_view, name='transcript_view'),
+    path('marksheet/pdf/<int:student_id>/<int:semester_id>/', views.generate_marksheet_pdf, name='generate_marksheet_pdf'),
+
 
 ]
