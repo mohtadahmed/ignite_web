@@ -40,6 +40,9 @@ urlpatterns = [
     path('faculty/edit/<int:faculty_id>/', views.edit_faculty, name='edit_faculty'),
     path('faculty/delete/<int:faculty_id>/', views.delete_faculty, name='delete_faculty'),
 
+    # Student Migration
+    path('semester-migration/', views.semester_migration_panel, name='semester_migration_panel'),
+
 
     # API views
     path('api/register/', views.register_user, name='api-register'),

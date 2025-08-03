@@ -53,6 +53,8 @@ class StudentProfile(models.Model):
     address = models.TextField(blank=True)
     session = models.CharField(max_length=10, blank=True, null=True)
     program = models.CharField(max_length=10, choices=PROGRAM_CHOICES, blank=True, null=True)
+    current_semester = models.ForeignKey('academics.Semester', on_delete=models.SET_NULL, null=True, blank=True, related_name='current_students')
+    migrated_semesters = models.ManyToManyField('academics.Semester', blank=True, related_name='migrated_students')
 
     def __str__(self):
         return f"Student: {self.user.email} - {self.student_id}"
@@ -69,14 +71,22 @@ class FacultyProfile(models.Model):
 
 
 class Course(models.Model):
+    COURSE_TYPE_CHOICES = [
+        ('theory', 'Theory'),
+        ('lab', 'Lab'),
+        ('field', 'Field Work'),
+        ('thesis', 'Thesis'),
+    ]
+
     course_code = models.CharField(max_length=20, unique=True)
     course_name = models.CharField(max_length=100)
     credit = models.DecimalField(max_digits=4, decimal_places=2)
     semester = models.ForeignKey('academics.Semester', on_delete=models.CASCADE)
     department = models.CharField(max_length=100)
+    course_type = models.CharField(max_length=20, choices=COURSE_TYPE_CHOICES, default='theory')
 
     def __str__(self):
-        return f"{self.course_code} - {self.course_name}"
+        return f"{self.course_code} - {self.course_name} - ({self.get_course_type_display()})"
     
 
 class CourseAssignment(models.Model):

@@ -16,7 +16,7 @@ from django.utils.encoding import force_str
 from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import User, StudentProfile, Course, CourseAssignment, FacultyProfile, StudentCourseEnrollment
-from academics.models import Semester
+from academics.models import Semester, Routine, ScheduleItem, CourseResource
 import csv
 from django.http import HttpResponse
 from .forms import CourseForm, CourseAssignmentForm, FacultyCreationForm, StudentCourseEnrollmentForm
@@ -69,18 +69,29 @@ def faculty_dashboard(request):
     
     # Count total students enrolled in those courses
     total_students = StudentCourseEnrollment.objects.filter(course__in=course_ids).values('student').distinct().count()
+
+    
+    schedule_items = ScheduleItem.objects.all().order_by('scheduled_date')
+    resources = CourseResource.objects.all().order_by('-uploaded_at')[:10]
     
     context = {
         'total_assigned_courses': total_assigned_courses,
         'total_students': total_students,
         'assigned_courses': assigned_courses,  # optional to list in template
+        'schedule_items': schedule_items,
+        'resources': resources,
     }
     return render(request, 'faculty_dashboard.html', context)
 
 
 @login_required
 def student_dashboard(request):
-    return render(request, 'student_dashboard.html')
+    context = {
+        'routine': Routine.objects.last(),
+        'schedule_items': ScheduleItem.objects.order_by('scheduled_date'),
+        'resources': CourseResource.objects.order_by('-uploaded_at')[:10]
+    }
+    return render(request, 'student_dashboard.html', context)
     
 
 
@@ -457,6 +468,7 @@ def course_add(request):
         credit = request.POST.get('credit')
         semester_id = request.POST.get('semester')
         department = request.POST.get('department')
+        course_type = request.POST.get('course_type')
 
         try:
             semester = Semester.objects.get(id=semester_id)
@@ -466,7 +478,8 @@ def course_add(request):
                 course_name=course_name,
                 credit=credit,
                 semester=semester,
-                department=department
+                department=department,
+                course_type=course_type
             )
             messages.success(request, "Course added successfully.")
             return redirect('course_list')
@@ -476,7 +489,9 @@ def course_add(request):
             messages.error(request, f"Error adding course: {e}")
 
     semesters = Semester.objects.all()
-    return render(request, 'courses/course_add.html', {'semesters': semesters})
+    # course_types = [choice[0] for choice in Course.COURSE_TYPE_CHOICES]
+    course_types = Course.COURSE_TYPE_CHOICES
+    return render(request, 'courses/course_add.html', {'semesters': semesters, 'course_types': course_types})
 
 # Course list view
 def course_list(request):
@@ -488,30 +503,38 @@ def course_bulk_upload(request):
     if request.method == 'POST' and request.FILES.get('upload_file'):
         file = request.FILES['upload_file']
         try:
+            # Read file into DataFrame
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file)
             else:
                 df = pd.read_excel(file)
 
-            # Normalize column names to avoid leading/trailing spaces
+            # Normalize column names
             df.columns = df.columns.str.strip()
 
+            required_columns = ['Course Code', 'Course Name', 'Credit', 'Course Type', 'Department', 'Semester']
+            for col in required_columns:
+                if col not in df.columns:
+                    messages.error(request, f"Missing required column: {col}")
+                    return redirect('course_bulk_upload')
+
             for _, row in df.iterrows():
-                semester_obj, _ = Semester.objects.get_or_create(name=str(row['Semester']).strip())
+                semester_name = str(row['Semester']).strip()
+                semester_obj, _ = Semester.objects.get_or_create(name=semester_name)
 
                 Course.objects.update_or_create(
                     course_code=str(row['Course Code']).strip(),
                     defaults={
                         'course_name': str(row['Course Name']).strip(),
                         'credit': float(row['Credit']),
-                        'semester': semester_obj,
-                        'department': str(row['Department']).strip()
+                        'course_type': str(row['Course Type']).strip().lower(),  # 'theory' or 'lab'
+                        'department': str(row['Department']).strip(),
+                        'semester': semester_obj
                     }
                 )
             messages.success(request, "Courses uploaded successfully.")
         except Exception as e:
             messages.error(request, f"Upload failed: {str(e)}")
-
         return redirect('course_bulk_upload')
 
     return render(request, 'courses/course_bulk_upload.html')
@@ -687,3 +710,40 @@ def assign_courses_to_student(request):
         form = StudentCourseEnrollmentForm()
     
     return render(request, 'courses/assign_courses.html', {'form': form})
+
+
+# Student Migration
+@login_required
+def semester_migration_panel(request):
+    semesters = Semester.objects.all()
+    students = []
+
+    if request.method == 'POST':
+        print('POST data:', request.POST)
+        current_sem_id = request.POST.get('current_semester')
+        next_sem_id = request.POST.get('next_semester')
+        student_ids = request.POST.getlist('student_ids')
+
+        current_sem = Semester.objects.get(id=current_sem_id)
+        next_sem = Semester.objects.get(id=next_sem_id)
+
+        selected_students = StudentProfile.objects.filter(id__in=student_ids)
+
+        for student in selected_students:
+            student.semester = next_sem
+            student.migrated_semesters.add(current_sem)
+            student.save()
+
+        messages.success(request, f"{selected_students.count()} students migrated to {next_sem.name} successfully.")
+        return redirect('semester_migration_panel')
+
+    elif request.method == 'GET' and 'semester_filter' in request.GET:
+        print('GET data:', request.GET)
+        selected_semester = request.GET.get('semester_filter')
+        if selected_semester:
+            students = StudentProfile.objects.filter(semester=selected_semester)
+
+    return render(request, 'students/semester_migration_panel.html', {
+        'semesters': semesters,
+        'students': students,
+    })
