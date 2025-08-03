@@ -1,6 +1,96 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <div class="container mt-4">
-  <h3>Student Dashboard</h3>
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="mb-0">🎓 Student Dashboard</h2>
+      <a href="{% url 'view_routines' %}" class="btn btn-sm btn-primary">View Routine</a>
+    </div>
+    <div class="card-body">
+      <p>Welcome to your student dashboard! Here you can view your routine, upcoming schedules, and shared resources.</p>
+    </div>
+  </div>
+<div class="mt-5">
+  
+
+  <!-- Class Routine Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">📅 Class Routine</div>
+    <div class="card-body">
+      {% if routine %}
+        <a href="{{ routine.file.url }}" target="_blank" class="btn btn-outline-primary">View / Download Routine</a>
+      {% else %}
+        <p>No routine uploaded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Upcoming Schedule Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-success text-white">⏳ Upcoming Schedules</div>
+    <div class="card-body">
+      {% if schedule_items %}
+        <ul class="list-group">
+          {% for item in schedule_items %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ item.course.name }}</strong> - {{ item.get_event_type_display }} ({{ item.event_date }})
+              </div>
+              <span class="badge bg-info text-dark countdown" data-date="{{ item.event_date|date:'Y-m-d' }}"></span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No upcoming events found.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resource Sharing Section -->
+  <div class="card">
+    <div class="card-header bg-warning text-dark">📚 Shared Course Resources</div>
+    <div class="card-body">
+      {% if resources %}
+        <div class="row">
+          {% for res in resources %}
+            <div class="col-md-6 mb-3">
+              <div class="card">
+                <div class="card-body">
+                  <h5>{{ res.title }}</h5>
+                  <p class="text-muted">{{ res.course.name }} | {{ res.get_resource_type_display }}</p>
+                  {% if res.resource_type == 'PDF' and res.file %}
+                    <a href="{{ res.file.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">📄 View PDF</a>
+                  {% elif res.resource_type == 'LINK' and res.link %}
+                    <a href="{{ res.link }}" class="btn btn-sm btn-outline-secondary" target="_blank">🔗 Open Link</a>
+                  {% elif res.resource_type == 'NOTE' %}
+                    <p>{{ res.note }}</p>
+                  {% endif %}
+                  <small class="text-muted float-end">Uploaded: {{ res.uploaded_at|date:"d M Y" }}</small>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>No resources available yet.</p>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+<script>
+  // Countdown badge script
+  document.querySelectorAll('.countdown').forEach(el => {
+    const dateStr = el.getAttribute('data-date')
+    const targetDate = new Date(dateStr)
+    const today = new Date()
+    const diff = Math.floor((targetDate - today) / (1000 * 60 * 60 * 24))
+    if (diff > 1) el.textContent = `in ${diff} days`
+    else if (diff === 1) el.textContent = 'Tomorrow'
+    else if (diff === 0) el.textContent = 'Today'
+    else el.textContent = `Overdue`
+  })
+</script>
+
 {% endblock %}
