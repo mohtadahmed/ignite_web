@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Schedule an Exam or Task</h3>
+<form method="POST">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Course</label>
+    <select name="course" class="form-select">
+      {% for course in courses %}
+      <option value="{{ course.id }}">{{ course.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Exam Type</label>
+    <select name="exam_type" class="form-select">
+      <option value="CT">Class Test</option>
+      <option value="ASSIGNMENT">Assignment</option>
+      <option value="QUIZ">Quiz</option>
+      <option value="LAB">Lab Exam</option>
+      <option value="VIVA">Viva</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Date and Time</label>
+    <input type="datetime-local" name="scheduled_date" class="form-control" required>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Add Schedule</button>
+</form>
+{% endblock %}
