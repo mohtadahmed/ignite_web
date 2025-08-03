@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Enter Lab Marks</h4>
+        </div>
+        <div class="card-body">
+            
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="course">Select Lab Course:</label>
+                            <select name="course_id" id="course" class="form-control" required>
+                                <option value="" disabled selected>Select Course</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}" data-credit="{{ course.credit }}">{{ course.course_code }} - {{ course.course_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="student">Select Student:</label>
+                            <select name="student_id" id="student" class="form-control" required>
+                                <option value="" disabled selected>Select Student</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.student_id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="quiz_viva">Quiz & Viva Marks <span id="max_quiz">(out of 0.00)</span></label>
+                            <input type="number" step="0.01" name="quiz_viva" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="experiment">Experiment/Practical Marks <span id="max_experiment">(out of 0.00)</span></label>
+                            <input type="number" step="0.01" name="experiment" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="attendance">Attendance Marks <span id="max_attendance">(out of 0.00)</span></label>
+                            <input type="number" step="0.01" name="attendance" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <button type="submit" class="btn btn-sm btn-primary">Submit Marks</button>
+            </form>
+        </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $('#course').change(function () {
+      const credit = parseFloat($(this).find(':selected').data('credit'));
+      const base = credit * 25;
+
+      const quizMax = (base * 0.40).toFixed(2);
+      const experimentMax = (base * 0.50).toFixed(2);
+      const attendanceMax = (base * 0.10).toFixed(2);
+
+      $('#max_quiz').text(`(out of ${quizMax})`);
+      $('#max_experiment').text(`(out of ${experimentMax})`);
+      $('#max_attendance').text(`(out of ${attendanceMax})`);
+    });
+  </script>
+{% endblock %}
