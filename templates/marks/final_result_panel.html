@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container">
+    <div class="card shadow-lg">
+        <div class="card-header">
+            <h4 class="mb-0">Final Result</h4>
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label for="semester" class="form-label">Semester:</label>
+                        <select name="semester" class="custom-select" id="semester" required>
+                            <option value="">Select Semester</option>
+                            {% for sem in semesters %}
+                                <option value="{{ sem.id }}" {% if selected_semester_id == sem.id|stringformat:"s" %}selected{% endif %}>{{ sem.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="course" class="form-label">Course:</label>
+                        <select name="course" class="custom-select" id="course" required>
+                            <option value="">Select Course</option>
+                            {% for course in courses %}
+                                <option value="{{ course.id }}" {% if selected_course_id == course.id|stringformat:"s" %}selected{% endif %}>{{ course.course_code }} - {{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary mt-4" type="submit">View Results</button>
+                    </div>
+                </div>
+            </form>
+
+            {% if results %}
+                <table class="table table-bordered mt-4">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>CT</th>
+                            <th>Attendance</th>
+                            <th>Final</th>
+                            <th>Total</th>
+                            <th>Percentage(%)</th>
+                            <th>Grade</th>
+                            <th>Grade Point</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result.student.student_id }}</td>
+                            <td>{{ result.student.user.name }}</td>
+                            <td>{{ result.ct }}</td>
+                            <td>{{ result.attendance }}</td>
+                            <td>{{ result.final }}</td>
+                            <td>{{ result.total }}</td>
+                            <td>{{ result.percentage }}</td>
+                            <td>{{ result.grade }}</td>
+                            <td>{{ result.grade_point }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif selected_semester_id and selected_course_id %}
+                <p>All Results are not yet ready for publish. Please check all marks distribution.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
