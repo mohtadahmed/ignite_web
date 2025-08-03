@@ -128,8 +128,48 @@
                         <a class="collapse-item" href="{% url 'add_assignment_marks' %}">Add Assignment Marks</a>
                         <a class="collapse-item" href="{% url 'assignment_marks_list' %}">Assignment Marks</a>
                         <a class="collapse-item" href="{% url 'add_quiz_marks' %}">Add Quiz Marks</a>
+                        <a class="collapse-item" href="{% url 'lab_mark_entry' %}">Add Lab Mark</a>
+                        <a class="collapse-item" href="{% url 'add_thesis_mark' %}">Add Thesis Marks</a>
+                        <a class="collapse-item" href="{% url 'field_work_mark_entry' %}">Add FieldWork Marks</a>
+                        <a class="collapse-item" href="{% url 'add_final_exam_mark' %}">Add Final Mark</a>
+                        <a class="collapse-item" href="{% url 'final_result_panel' %}">Final Result Panel</a>
+                        <a class="collapse-item" href="{% url 'set_mark_distribution' %}">Set Marks Dist</a>
                         <a class="collapse-item" href="{% url 'quiz_marks_list' %}">Quiz Marks</a>
                         <a class="collapse-item" href="{% url 'marks_view' %}">Demo Marks View</a>
+                        <a class="collapse-item" href="{% url 'transcript_view' %}">Transcript View</a>
+                    </div>
+                </div>
+            </li>
+            {% endif %}
+
+            <!-- Student Panel (Student Only) -->
+            {% if user.role == 'student' %}
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#courses"
+                    aria-expanded="true" aria-controls="courses">
+                    <i class="fas fa-fw fa-wrench"></i>
+                    <span>Courses</span>
+                </a>
+                <div id="courses" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{% url 'course_list' %}">Course List</a>
+                    </div>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
+                    aria-expanded="true" aria-controls="collapseUtilities">
+                    <i class="fas fa-fw fa-wrench"></i>
+                    <span>Marks</span>
+                </a>
+                <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{% url 'ct_marks_list' %}">CT Marks</a>
+                        <a class="collapse-item" href="{% url 'assignment_marks_list' %}">Assignment Marks</a>
+                        <a class="collapse-item" href="{% url 'quiz_marks_list' %}">Quiz Marks</a>
                     </div>
                 </div>
             </li>
@@ -146,9 +186,12 @@
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         {% if user.role == 'admin' %}
+                        <a class="collapse-item" href="{% url 'semester_migration_panel' %}">Student Migration</a>
                         <a class="collapse-item" href="{% url 'add_student' %}">Add Student</a>
                         {% endif %}
                         <a class="collapse-item" href="{% url 'student_list' %}">Student List</a>
+                        <a class="collapse-item" href="{% url 'student_marksheet' %}">Student Marksheet</a>
+                        <a class="collapse-item" href="{% url 'generate_marksheet' %}">Student Profile</a>
                     </div>
                 </div>
             </li>
@@ -224,16 +267,31 @@
             {% endif %}
 
             <!-- Final Exam Marks - Admin -->
-            {% if request.user.role == 'admin' %}
+            {% if user.role == 'admin' or user.role == 'faculty' or user.role == 'student' %}
             <li class="nav-item">
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseFinalMarksAdmin"
                     aria-expanded="true" aria-controls="collapseFinalMarksAdmin">
                     <i class="fas fa-fw fa-clipboard"></i>
-                    <span>Final Exam Marks</span>
+                    <span>Resource Management</span>
                 </a>
                 <div id="collapseFinalMarksAdmin" class="collapse" aria-labelledby="headingFinalMarksAdmin" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{% url 'assign_final_exam_marks' %}">Assign Marks to Course</a>
+                        {% if user.role == 'admin' %}
+                        <a class="collapse-item" href="{% url 'view_routines' %}">View Routine</a>
+                        <a class="collapse-item" href="{% url 'upload_routine' %}">Upload Routine</a>
+                        {% endif %}
+                        {% if user.role == 'faculty' %}
+                        <a class="collapse-item" href="{% url 'upload_resource' %}">Upload Resource</a>
+                        <a class="collapse-item" href="{% url 'resource_library' %}">Resource Library</a>
+                        <a class="collapse-item" href="{% url 'add_schedule' %}">Assign Schedule</a>
+                        <a class="collapse-item" href="{% url 'student_schedule_list' %}">View Schedule</a>
+                        {% endif %}
+                        {% if user.role == 'student' %}
+                        {% endif %}
+                        {% if user.role == 'student' %}
+                        <a class="collapse-item" href="{% url 'resource_library' %}">Resource Library</a>
+                        <a class="collapse-item" href="{% url 'student_schedule_list' %}">View Schedule</a>
+                        {% endif %}
                     </div>
                 </div>
             </li>
@@ -531,7 +589,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Your Website 2021</span>
+                        <span>Copyright &copy; Ignite Web 2025</span>
                     </div>
                 </div>
             </footer>
