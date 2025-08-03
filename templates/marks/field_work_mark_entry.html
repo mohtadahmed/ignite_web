@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+  <h4>Field Work Mark Entry</h4>
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group mb-3">
+      <label for="student">Student</label>
+      <select name="student_id" class="form-control" required>
+        <option value="" disabled selected>Select Student</option>
+        {% for student in students %}
+          <option value="{{ student.id }}">{{ student.student_id }} - {{ student.full_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="course">Course</label>
+      <select name="course_id" class="form-control" id="course-select" required onchange="updateMaxFieldMark()">
+        <option value="" disabled selected>Select Course</option>
+        {% for course in field_work_courses %}
+          <option value="{{ course.id }}" data-credit="{{ course.credit }}">{{ course.course_code }} - {{ course.course_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group mb-3">
+      <label for="field_mark">Field Work Mark <small id="field-max" class="text-muted">(out of ?)</small></label>
+      <input type="number" name="field_mark" class="form-control" step="0.01" required>
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit</button>
+  </form>
+</div>
+
+<script>
+function updateMaxFieldMark() {
+  const select = document.getElementById("course-select");
+  const selectedOption = select.options[select.selectedIndex];
+  const credit = parseFloat(selectedOption.getAttribute("data-credit"));
+  if (!credit) return;
+
+  const total = (credit * 25).toFixed(2);
+  document.getElementById("field-max").textContent = `(out of ${total})`;
+}
+</script>
+{% endblock %}
