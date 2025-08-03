@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Shared Course Resources</h2>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Course</th>
+      <th>Category</th>
+      <th>Title</th>
+      <th>Uploaded By</th>
+      <th>Resource</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for res in resources %}
+    <tr>
+      <td>{{ res.course.course_name }}</td>
+      <td>{{ res.get_category_display }}</td>
+      <td>{{ res.title }}</td>
+      <td>{{ res.uploaded_by.email }}</td>
+      <td>
+        {% if res.file %}
+          <a href="{{ res.file.url }}" download>Download File</a>
+        {% endif %}
+        {% if res.external_link %}
+          <a href="{{ res.external_link }}" target="_blank">Visit Link</a>
+        {% endif %}
+      </td>
+      <td>{{ res.uploaded_at|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

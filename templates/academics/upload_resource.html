@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Upload Course Resource</h2>
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  <label>Course</label>
+  <select name="course" required class="form-control mb-2">
+    {% for course in courses %}
+      <option value="{{ course.id }}">{{ course.course_name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Category</label>
+  <select name="category" class="form-control mb-2">
+    <option value="lecture">Lecture</option>
+    <option value="book">Book</option>
+    <option value="note">Note</option>
+    <option value="question">Question</option>
+    <option value="link">External Link</option>
+    <option value="other">Other</option>
+  </select>
+
+  <label>Title</label>
+  <input type="text" name="title" required class="form-control mb-2">
+
+  <label>Description (optional)</label>
+  <textarea name="description" class="form-control mb-2"></textarea>
+
+  <label>Upload File (optional)</label>
+  <input type="file" name="file" class="form-control mb-2">
+
+  <label>External Link (optional)</label>
+  <input type="url" name="external_link" class="form-control mb-2">
+
+  <button type="submit" class="btn btn-primary">Upload</button>
+</form>
+{% endblock %}
