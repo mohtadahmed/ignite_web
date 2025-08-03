@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Semester Migration Panel</h5>
+        </div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label for="semester_filter" class="form-select">Select Current Semester:</label>
+                        <select class="custom-select" name="semester_filter" required>
+                            <option value="">--Select--</option>
+                            {% for sem in semesters %}
+                                <option value="{{ sem.id }}" {% if sem.id|stringformat:"s" == request.GET.semester_filter %}selected{% endif %}>{{ sem.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary" type="submit">Show Students</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    {% if students %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Students in Selected Semester:</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="current_semester" value="{{ request.GET.semester_filter }}">
+                
+                <table class="table table-bordered">
+                    <thead>
+                        <tr><th>Select</th><th>ID</th><th>Name</th><th>Email</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr>
+                                <td><input type="checkbox" name="student_ids" value="{{ student.id }}"></td>
+                                <td>{{ student.student_id }}</td>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.user.email }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                
+                <div>
+                    <hr>
+                    <div class="row align-items-end">
+                        <label for="next_semester" class="form-label">Select Next Semester:</label>
+                        <div class="col-md-6">
+                            <select name="next_semester" class="custom-select" required>
+                                <option value="">--Select--</option>
+                                {% for sem in semesters %}
+                                    <option value="{{ sem.id }}">{{ sem.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary" type="submit">Migrate Selected Students</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
