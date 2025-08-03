@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h4 class="mb-0">Student Transcript</h4>
+    </div>
+    <div class="card-body">
+      <form method="get" id="transcriptForm">
+        <div class="row align-items-end">
+          <div class="col-md-6">
+            <label for="student" class="input-group">Select Student:</label>
+            <select name="student_id" id="student" class="custom-select" required>
+              <option value="">--Select--</option>
+              {% for s in students %}
+                <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_student_id %}selected{% endif %}>{{ s.student_id }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <button class="btn btn-primary" type="submit">Generate Transcript</button>
+            <button type="button" class="btn btn-secondary ml-2" onclick="resetForm()">Reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% if student %}
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5 class="mb-0 text-primary">Transcript for {{ student.full_name }} ID: {{ student.student_id }}</h5>
+      </div>
+      <div class="card-body">
+        
+        {% for sem in transcript_data %}
+          <hr>
+          <h5 class="text-primary">Semester: {{ sem.semester }}</h5>
+          <hr>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Credit</th>
+                <th>Grade</th>
+                <th>Grade Point</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in sem.courses %}
+                <tr>
+                  <td>{{ c.course.course_code }}</td>
+                  <td>{{ c.course.course_name }}</td>
+                  <td>{{ c.credit }}</td>
+                  <td>{{ c.grade }}</td>
+                  <td>{{ c.point }}</td>
+                </tr>
+              {% endfor %}
+              <tr><td colspan="4"><strong>GPA</strong></td><td>{{ sem.gpa }}</td></tr>
+            </tbody>
+          </table>
+        {% endfor %}
+
+        <hr>
+        <h3 class="text-primary">Final CGPA: {{ cgpa }}</h3>
+        <hr>
+        <a class="btn btn-sm btn-primary" href="?student_id={{ selected_student_id }}&pdf=true" target="_blank">Export Transcript PDF</a>
+      </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+  // Function to reset the form and reload the page
+  function resetForm() {
+      document.getElementById('transcriptForm').reset();
+      window.location.href = "{% url 'transcript_view' %}";
+  }
+
+  // Clear selection when page is reloaded
+  if(performance.navigation.type == 1) {
+      document.getElementById('transcriptForm').reset();
+  }
+</script>
+
+{% endblock %}

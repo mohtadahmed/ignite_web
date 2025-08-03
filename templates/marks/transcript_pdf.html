@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #000; padding: 4px; text-align: center; }
+    h2, h3 { text-align: center; }
+    footer { margin-top: 30px; text-align: center; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h2>Academic Transcript</h2>
+  <h3> Student ID: {{ student.student_id }}</h3>
+
+  {% for sem in transcript_data %}
+    <h3>{{ sem.semester }}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Credit</th>
+          <th>Mark</th>
+          <th>Grade</th>
+          <th>Grade Point</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in sem.courses %}
+          <tr>
+            <td>{{ c.course.course_code }} - {{ c.course.course_name }}</td>
+            <td>{{ c.credit }}</td>
+            <td>{{ c.total_mark }}</td>
+            <td>{{ c.grade }}</td>
+            <td>{{ c.point }}</td>
+          </tr>
+        {% endfor %}
+        <tr><td colspan="4"><strong>GPA</strong></td><td>{{ sem.gpa }}</td></tr>
+      </tbody>
+    </table>
+  {% endfor %}
+
+  <h3 style="text-align:center;">Final CGPA: {{ cgpa }}</h3>
+
+  <footer>
+    Software Generated Transcript
+  </footer>
+</body>
+</html>
