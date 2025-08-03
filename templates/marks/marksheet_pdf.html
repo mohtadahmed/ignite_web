@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border: 1px solid black; padding: 6px; text-align: center; }
+    h2, h4 { text-align: center; }
+    footer { position: fixed; bottom: 10px; text-align: center; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h2>Marksheet</h2>
+  <h4>{{ student.name }} | Student ID: {{ student.student_id }} | Semester: {{ semester.id }}</h4>
+  <table>
+    <tr>
+      <th>Course</th><th>Credit</th><th>Total</th><th>Percentage</th><th>Grade</th><th>Grade Point</th>
+    </tr>
+    {% for item in result_data %}
+    <tr>
+      <td>{{ item.course }}</td>
+      <td>{{ item.credit }}</td>
+      <td>{{ item.total_mark }}</td>
+      <td>{{ item.percentage }}%</td>
+      <td>{{ item.grade }}</td>
+      <td>{{ item.point }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <h4>GPA: {{ gpa }}</h4>
+  <footer>Software Generated Marksheet</footer>
+</body>
+</html>
