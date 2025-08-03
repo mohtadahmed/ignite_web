@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">Thesis Mark Entry</h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="course">Course</label>
+                        <select name="course_id" class="form-control" id="course-select" required onchange="updateMaxMarks()">
+                            <option value="" disabled selected>Select Course</option>
+                            {% for course in thesis_courses %}
+                            <option value="{{ course.id }}" data-credit="{{ course.credit }}">{{ course.course_code }} - {{ course.course_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="student">Student</label>
+                        <select name="student_id" class="form-control" required>
+                            <option value="" disabled selected>Select Student</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.student_id }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="form-group mb-3">
+                        <label for="internal_mark">Internal Mark <small id="internal-max" class="text-muted">(out of 0.00)</small></label>
+                        <input type="number" name="internal_mark" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group mb-3">
+                        <label for="external_mark">External Mark <small id="external-max" class="text-muted">(out of 0.00)</small></label>
+                        <input type="number" name="external_mark" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group mb-3">
+                        <label for="presentation_mark">Presentation Mark <small id="presentation-max" class="text-muted">(out of 0.00)</small></label>
+                        <input type="number" name="presentation_mark" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary">Submit</button>
+        </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateMaxMarks() {
+  const select = document.getElementById("course-select");
+  const selectedOption = select.options[select.selectedIndex];
+  const credit = parseFloat(selectedOption.getAttribute("data-credit"));
+  if (!credit) return;
+
+  const total = credit * 25;
+  const internalMax = (total * 0.35).toFixed(2);
+  const externalMax = (total * 0.35).toFixed(2);
+  const presentationMax = (total * 0.30).toFixed(2);
+
+  document.getElementById("internal-max").textContent = `(out of ${internalMax})`;
+  document.getElementById("external-max").textContent = `(out of ${externalMax})`;
+  document.getElementById("presentation-max").textContent = `(out of ${presentationMax})`;
+}
+</script>
+{% endblock %}
