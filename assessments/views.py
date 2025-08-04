@@ -392,9 +392,6 @@ def get_students_by_course(request):
     return JsonResponse({'students': list(students)})
 
 
-from decimal import Decimal, ROUND_HALF_UP, ROUND_CEILING
-from assessments.utils import calculate_grade
-
 def final_result_panel(request):
     semesters = Semester.objects.all()
     courses = Course.objects.all()
@@ -622,14 +619,6 @@ def student_marksheet_view(request):
 
 
 # Generate marksheet as pdf
-
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from xhtml2pdf import pisa
-from django.template.loader import get_template
-from django.db.models import Sum
-
-
 def generate_marksheet(request):
     students = StudentProfile.objects.all()
     semesters = Semester.objects.all()
@@ -747,13 +736,28 @@ def generate_marksheet(request):
     return render(request, 'marks/marksheet_panel.html', context)
 
 
+
+from assessments.utils import calculate_grade
+from io import BytesIO
+from decimal import Decimal, ROUND_CEILING
+from django.http import HttpResponse
+
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
-from reportlab.lib import colors
-from reportlab.lib.units import mm, inch
-from io import BytesIO
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, KeepTogether)
+from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
+import os
+from datetime import datetime
+
+# -----------------------------------
+from django.conf import settings
+from django.shortcuts import render, get_object_or_404
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from django.db.models import Sum
+from PIL import Image as PILImage
 
 
 def generate_marksheet_pdf(request, student_id, semester_id):
@@ -822,7 +826,8 @@ def generate_marksheet_pdf(request, student_id, semester_id):
                     'total_mark': total_mark,
                     'percentage': percentage,
                     'grade': grade,
-                    'point': Decimal(point).quantize(Decimal('0.01'), rounding=ROUND_CEILING),
+                    'point': point,
+                    # 'point': Decimal(point).quantize(Decimal('0.01'), rounding=ROUND_CEILING),
                 })
 
                 total_credits += credit
@@ -832,11 +837,19 @@ def generate_marksheet_pdf(request, student_id, semester_id):
                 print(f"Skipping course {course.course_name}: {str(e)}")
                 continue
 
+        print('result_data', result_data)
+        
+
+        gpa = (total_grade_points / Decimal(total_credits)).quantize(Decimal('0.01')) if total_credits > 0 else Decimal('0.00')
+
         # PDF Generation
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter,
-                            rightMargin=30, leftMargin=30,
-                            topMargin=20, bottomMargin=20)
+        doc = SimpleDocTemplate(buffer, 
+                                pagesize=letter,
+                                rightMargin=30,
+                                leftMargin=30,
+                                topMargin=20,
+                                bottomMargin=20)
         
         # Custom styles
         styles = getSampleStyleSheet()
@@ -867,16 +880,42 @@ def generate_marksheet_pdf(request, student_id, semester_id):
             textColor=colors.grey,
             spaceBefore=12  # Add some space above the footer
         ))
+        styles.add(ParagraphStyle(
+            'LeftTitle',
+            parent=styles['Title'],
+            alignment=0,
+            leftIndent=0,
+            fontSize=14,
+            spaceAfter=6
+        ))
+        styles.add(ParagraphStyle(
+            'LeftNormal',
+            parent=styles['Normal'],
+            alignment=0,  # 0=left, 1=center, 2=right
+            leftIndent=0,
+            spaceAfter=6
+        ))
         
 
         story = []
 
         # Add University Logo
-        logo_path = "static/img/university_logo.png"  # Update with your actual path
-        logo = Image(logo_path, width=1.5*inch, height=1.5*inch)
-        logo.hAlign = 'CENTER'
-        story.append(logo)
-        story.append(Spacer(1, 12))  # Add some space after logo
+        # logo_path = "static/img/university_logo.png"  # Update with your actual path
+        # logo = PILImage(logo_path, width=1.5*inch, height=1.5*inch)
+        # logo.hAlign = 'CENTER'
+        # story.append(logo)
+        # story.append(Spacer(1, 12))  # Add some space after logo
+        logo_path = os.path.join('static', 'img', 'university_logo.png')
+        if os.path.exists(logo_path):
+            try:
+                logo = RLImage(logo_path, width=1.5*inch, height=1.5*inch)
+                logo.hAlign = 'CENTER'
+                story.append(logo)
+                story.append(Spacer(1, 12))
+            except:
+                story.append(Paragraph("University of Chittagong", styles['CenterTitle']))
+        else:
+            story.append(Paragraph("University of Chittagong", styles['CenterTitle']))
         
         # Header
         story.append(Paragraph("UNIVERSITY OF CHITTAGONG", styles['CenterTitle']))
@@ -884,18 +923,49 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         story.append(Spacer(1, 6))
 
         story.append(Paragraph("Department of Electrical and Electronic Engineering", styles['CenterTitle']))
-        story.append(Paragraph(f"{semester.name} B.Sc. Engineering Examination", styles['CenterNormal']))
-        story.append(Paragraph("Held in April - May, 2018 (Regular)", styles['CenterNormal']))
+        story.append(Paragraph(f"8th Semester B.Sc. Engineering Examination", styles['CenterNormal']))
+        story.append(Paragraph("Held in May - June, 2025", styles['CenterNormal']))
         story.append(Spacer(1, 12))
         
         # Student Info
         story.append(Paragraph("Grade Sheet", styles['CenterTitle']))
+        # story.append(Spacer(1, 6))
+        # story.append(Paragraph(f"Student ID : {student.student_id}", styles['CenterNormal']))
+        # story.append(Paragraph(f"Name of the Student: Dummy Student Name", styles['CenterNormal']))
+        # story.append(Paragraph(f"Name of the Hall : Dummy hall name", styles['CenterNormal']))
+        # story.append(Paragraph(f"Session : {student.session}", styles['CenterNormal']))
+        # story.append(Spacer(1, 12))
+
+        # Student Info
+        # Student Info Section - Left aligned
+        # story.append(Paragraph("Grade Sheet", styles['LeftNormal']))
         story.append(Spacer(1, 6))
-        story.append(Paragraph(f"Student ID : {student.student_id}", styles['CenterNormal']))
-        story.append(Paragraph(f"Name of the Student: Dummy Student Name", styles['CenterNormal']))
-        story.append(Paragraph(f"Name of the Hall : Dummy hall name", styles['CenterNormal']))
-        story.append(Paragraph(f"Session : {student.session}", styles['CenterNormal']))
+
+        # Create a table for perfect alignment with the main content table
+        student_info_data = [
+            [Paragraph(f"<b>Student ID</b>:", styles['LeftNormal']), Paragraph(student.student_id, styles['LeftNormal'])],
+            [Paragraph(f"<b>Name of Student</b>:", styles['LeftNormal']), Paragraph('Namirah Tarannum', styles['LeftNormal'])],
+            [Paragraph(f"<b>Hall</b>:", styles['LeftNormal']), Paragraph(getattr(student, 'hall', 'Preeteelata Hall'), styles['LeftNormal'])],
+            [Paragraph(f"<b>Session</b>:", styles['LeftNormal']), Paragraph(student.session, styles['LeftNormal'])]
+        ]
+
+        student_info_table = Table(student_info_data, colWidths=[1.5*inch, 4*inch])
+        student_info_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ]))
+
+        story.append(student_info_table)
         story.append(Spacer(1, 12))
+        # story.append(Paragraph("Grade Sheet", styles['LeftTitle']))
+        # story.append(Spacer(1, 6))
+        # story.append(Paragraph(f"<b>Student ID:</b> {student.student_id}", styles['LeftNormal']))
+        # story.append(Paragraph(f"<b>Name of Student:</b> Namirah Tarannum", styles['LeftNormal']))
+        # story.append(Paragraph(f"<b>Hall:</b> {getattr(student, 'hall', 'Preetilata Hall')}", styles['LeftNormal']))
+        # story.append(Paragraph(f"<b>Session:</b> {student.session}", styles['LeftNormal']))
+        # story.append(Spacer(1, 12))
         
         # Grade Table
         table_data = [
@@ -926,11 +996,19 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         # story.append(Paragraph(f"GPA: {gpa:.2f}", styles['normal']))
         # story.append(Spacer(1, 24))
         # Four items side by side
+        # footer_data = [
+        #     [f"<b>Total Credits Offered : {total_credits:.2f}</b>", 
+        #      f"<b>Total Credits Earned :</b> {total_credits:.2f}",
+        #      f"GPA: {gpa:.2f}",
+        #      "Result: P" if gpa >= 2.00 else "Result: F"]
+        # ]
         footer_data = [
-            [f"Total Credits Offered : {total_credits:.2f}", 
-             f"Total Credits Earned : {total_credits:.2f}",
-             f"GPA: {gpa:.2f}",
-             "Result: P"]
+            [
+                Paragraph(f"<b>Total Credits Offered: {total_credits:.2f}</b>", styles['BottomFooter']),
+                Paragraph(f"<b>Total Credits Earned: {total_credits:.2f}</b>", styles['BottomFooter']),
+                Paragraph(f"<b>GPA: {gpa:.2f}</b>", styles['BottomFooter']),
+                Paragraph(f"<b>Result: {'P' if gpa >= 2.00 else 'F'}</b>", styles['BottomFooter'])
+            ]
         ]
 
         footer_table = Table(footer_data, colWidths=[2*inch, 2*inch, 1.5*inch, 1.5*inch])
@@ -941,13 +1019,13 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         ]))
         story.append(footer_table)
         story.append(Spacer(1, 6))
-        story.append(Paragraph("Remarks:", styles['CenterNormal']))
-        story.append(Spacer(1, 12))
+        story.append(Paragraph("Remarks:", styles['BottomFooter']))
+        story.append(Spacer(1, 24))
         
         # Signature lines side by side
         signature_data = [
-            ["Date of Publication:..................", "Prepared By:....................."],
-            ["Date of Issue:........................", "Compared By:......................"]
+            ["Date of Publication:..........................", "Prepared By:.............................."],
+            ["Date of Issue:................................", "Compared By:.............................."]
         ]
         
         signature_table = Table(signature_data, colWidths=[3*inch, 3*inch])
@@ -963,6 +1041,7 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         story.append(Spacer(1, 48))
         story.append(Paragraph("<font color=#808080>Ignite Software Generated Marksheet</font>", styles['FooterItalic']))
         story.append(Paragraph("<font color=#808080>Ignite: Result Management Software</font>", styles['FooterItalic']))
+        story.append(Paragraph("<font color=#808080><b>Discalimer: Can't be used as an Official Document!</b></font>", styles['FooterItalic']))
 
         # Ensure everything fits on one page
         content = KeepTogether(story)
@@ -977,27 +1056,12 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         return response
         
     except Exception as e:
+        print(f"Error generating PDF: {str(e)}")
         return HttpResponse(f"Error generating PDF: {str(e)}", status=500)
 
 
 
-from datetime import datetime
-
 # Transcript Section
-import os
-from io import BytesIO
-from datetime import datetime  # Added missing import
-from decimal import Decimal, ROUND_CEILING
-from django.conf import settings
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import Table, TableStyle
-from reportlab.lib import colors
-from django.db.models import Sum
-from PIL import Image  # For image handling
-
 def transcript_view(request):
     students = StudentProfile.objects.all()
     selected_student_id = request.GET.get('student_id')
