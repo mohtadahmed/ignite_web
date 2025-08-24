@@ -18,10 +18,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import User, StudentProfile, Course, CourseAssignment, FacultyProfile, StudentCourseEnrollment
 from academics.models import Semester, Routine, ScheduleItem, CourseResource
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse, Http404, JsonResponse
 from .forms import CourseForm, CourseAssignmentForm, FacultyCreationForm, StudentCourseEnrollmentForm
 import pandas as pd
-from django.http import FileResponse, Http404
 import os
 from django.conf import settings
 from io import BytesIO
@@ -68,11 +67,14 @@ def faculty_dashboard(request):
     course_ids = assigned_courses.values_list('course_id', flat=True)
     
     # Count total students enrolled in those courses
-    total_students = StudentCourseEnrollment.objects.filter(course__in=course_ids).values('student').distinct().count()
+    # total_students = StudentCourseEnrollment.objects.filter(course__in=course_ids).values('student').distinct().count()
+    total_students = User.objects.filter(role='student').count()
+    print('total students', total_students)
 
     
     schedule_items = ScheduleItem.objects.all().order_by('scheduled_date')
     resources = CourseResource.objects.all().order_by('-uploaded_at')[:10]
+    print('resources', resources)
     
     context = {
         'total_assigned_courses': total_assigned_courses,
@@ -288,8 +290,30 @@ def is_admin(user):
 # List/Search Students
 @login_required
 def student_list(request):
-    students = StudentProfile.objects.all()
-    return render(request, 'students/student_list.html', {'students': students})
+    # students = StudentProfile.objects.all()
+    semesters = Semester.objects.all()
+    return render(request, 'students/student_list.html', {'semesters': semesters})
+
+
+def get_students_by_semester(request):
+    semester_id = request.GET.get("semester_id")
+    students = StudentProfile.objects.filter(semester=semester_id)
+
+    data = []
+    for i, student in enumerate(students, start=1):
+        data.append({
+            "sl": i,
+            "email": student.user.email,
+            "student_id": student.student_id,
+            "department": student.department,
+            "semester": str(student.semester),
+            "program": student.program,
+            "session": student.session,
+            "phone": student.phone,
+            "address": student.address,
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 # Add Student
@@ -607,7 +631,12 @@ def assign_faculty_to_course(request):
     })
 
 def assigned_courses_list(request):
-    assignments = CourseAssignment.objects.select_related('course', 'faculty').all()
+    # assignments = CourseAssignment.objects.select_related('course', 'faculty').all()
+    if request.user.role=='admin':
+        assignments = CourseAssignment.objects.select_related('course', 'faculty').all()
+    elif request.user.role == 'faculty':
+        faculty = request.user.facultyprofile  # already gives the FacultyProfile object
+        assignments = CourseAssignment.objects.select_related('course', 'faculty').filter(faculty=faculty)
     return render(request, 'courses/assigned_courses_list.html', {'assignments': assignments})
 
 def edit_course_assignment(request, assignment_id):
