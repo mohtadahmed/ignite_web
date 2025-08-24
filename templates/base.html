@@ -123,6 +123,7 @@
                 <div id="marksPanel" class="collapse" aria-labelledby="headingMarks" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="{% url 'attendance_mark_entry' %}">Add Attendance Marks</a>
+                        <a class="collapse-item" href="{% url 'attendance_marks_list' %}">Attendance Marks</a>
                         <a class="collapse-item" href="{% url 'add_ct_marks' %}">Add CT Marks</a>
                         <a class="collapse-item" href="{% url 'ct_marks_list' %}">CT Marks</a>
                         <a class="collapse-item" href="{% url 'add_assignment_marks' %}">Add Assignment Marks</a>
@@ -166,10 +167,15 @@
                 </a>
                 <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
                     data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{% url 'ct_marks_list' %}">CT Marks</a>
-                        <a class="collapse-item" href="{% url 'assignment_marks_list' %}">Assignment Marks</a>
-                        <a class="collapse-item" href="{% url 'quiz_marks_list' %}">Quiz Marks</a>
+                    <div class="bg-white py-2 collapse-inner rounded">                        
+                        <a class="collapse-item" href="{% url 'student_marksheet' %}">Marksheet</a>
+                        <a class="collapse-item" href="{% url 'generate_marksheet' %}">Profile</a>
+                        <a class="collapse-item" href="{% url 'student_ct_marks' %}">CT Marks</a>
+                        <a class="collapse-item" href="{% url 'student_attendance_marks' %}">Attendance Marks</a>
+                        <a class="collapse-item" href="{% url 'student_final_marks' %}">Final Marks</a>
+                        <!-- <a class="collapse-item" href="{% url 'student_result_overview' %}">Result Overview</a> -->
+                        <a class="collapse-item" href="{% url 'student_marksheet_panel' %}">Marksheet Overview</a>
+                        <a class="collapse-item" href="{% url 'student_marksheet_pdf_demo' %}">Demo View</a>
                     </div>
                 </div>
             </li>
@@ -207,6 +213,7 @@
                 <div id="marksPanel" class="collapse" aria-labelledby="headingMarks" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="{% url 'attendance_mark_entry' %}">Add Attendance Marks</a>
+                        <a class="collapse-item" href="{% url 'attendance_marks_list' %}">Attendance Marks</a>
                         <a class="collapse-item" href="{% url 'ct_marks_list' %}">CT Marks</a>
                         <a class="collapse-item" href="{% url 'assignment_marks_list' %}">Assignment Marks</a>
                         <a class="collapse-item" href="{% url 'quiz_marks_list' %}">Quiz Marks</a>
@@ -298,6 +305,7 @@
             {% endif %}
 
             <!-- Final Exam Marks - Faculty -->
+             {% comment %}
             {% if request.user.role == 'faculty' %}
             <li class="nav-item">
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseFinalMarksFaculty"
@@ -312,6 +320,7 @@
                 </div>
             </li>
             {% endif %}
+            {% endcomment %}
 
 
             <!-- Divider -->
@@ -546,7 +555,7 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Namirah Tarannum</span>
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ user.email }}</span>
                                 <img class="img-profile rounded-circle"
                                     src="{% static 'img/undraw_profile.svg' %}">
                             </a>
