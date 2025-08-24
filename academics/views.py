@@ -78,6 +78,15 @@ def resource_library(request):
     return render(request, 'academics/resource_library.html', {'resources': resources})
 
 
+from django.http import FileResponse, Http404
+
+def download_file(request, file_path):
+    filepath = os.path.join(settings.MEDIA_ROOT, file_path)
+    if os.path.exists(filepath):
+        return FileResponse(open(filepath, 'rb'), as_attachment=True)
+    raise Http404("File not found.")
+
+
 @login_required
 def add_schedule(request):
     if request.method == 'POST':
