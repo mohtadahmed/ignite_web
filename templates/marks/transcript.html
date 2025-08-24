@@ -64,7 +64,13 @@
         <hr>
         <h3 class="text-primary">Final CGPA: {{ cgpa }}</h3>
         <hr>
-        <a class="btn btn-sm btn-primary" href="?student_id={{ selected_student_id }}&pdf=true" target="_blank">Export Transcript PDF</a>
+        <!-- <a class="btn btn-sm btn-primary" href="?student_id={{ selected_student_id }}&pdf=true" target="_blank">Export Transcript PDF</a> -->
+        <a class="btn btn-sm btn-primary" 
+          href="{% url 'transcript_landscape_view' selected_student_id %}" 
+          target="_blank">
+          Export Transcript PDF
+        </a>
+
       </div>
     </div>
     {% endif %}

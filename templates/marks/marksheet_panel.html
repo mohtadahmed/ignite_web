@@ -13,7 +13,7 @@
                         <label for="student" class="form-label">Select Student</label>
                         <select name="student" class="custom-select">
                             {% for student in students %}
-                            <option value="{{ student.id }}" {% if student.id|stringformat:"s" == request.GET.student %}selected{% endif %}>{{ student.name }} {{ student.student_id }}</option>
+                            <option value="{{ student.id }}" {% if student.id|stringformat:"s" == request.GET.student %}selected{% endif %}>{{ student.full_name }} {{ student.student_id }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -36,8 +36,9 @@
     {% if result_data %}
     <div class="card mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="text-primary">Marksheet for {{ student.name }} {{ student.student_id }}</h4>
+            <h4 class="text-primary">Marksheet for {{ student.full_name }} {{ student.student_id }}</h4>
             <div>
+                <a href="{% url 'show_marksheet' %}">Show Marksheet</a>
                 <a href="{% url 'generate_marksheet_pdf' student.id selected_semester %}" 
                    class="btn btn-primary btn-sm">
                    Export PDF

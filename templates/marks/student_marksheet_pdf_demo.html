@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet Template</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+        .container {
+            max-width: 8.5in;
+            margin: auto;
+            padding: 1.5rem;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        @media print {
+            body {
+                background: none;
+            }
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+        }
+        .input-cell {
+            min-width: 50px;
+        }
+        .select-cell {
+            min-width: 60px;
+        }
+        /* Custom class for the very small grading table font */
+        .text-xxs {
+            font-size: 0.65rem;
+        }
+        /* Custom styling for the compact grading table cells */
+        .grading-table td, .grading-table th {
+            padding: 1px 4px;
+        }
+        .course-title-cell {
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+        .main-table td, .main-table th {
+            padding: 4px;
+        }
+    </style>
+    <!-- LaTeX for mathematical equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="bg-gray-100">
+
+<div class="container rounded-lg my-8">
+
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="w-1/4"></div>
+        <div class="text-center w-2/4">
+            <img src="https://placehold.co/100x100/A3B8C1/fff?text=CU" alt="University Logo" class="mx-auto mb-2 rounded-full">
+            <h1 class="text-xl font-bold">UNIVERSITY OF CHITTAGONG</h1>
+            <p class="text-sm">CHITTAGONG, BANGLADESH</p>
+            <p class="mt-4 text-md font-semibold">Department of Electrical and Electronic Engineering</p>
+            <p class="text-sm font-medium">Seventh Semester B.Sc. Engineering Examination-2020</p>
+            <p class="text-xs">Held in February - November, 2021</p>
+        </div>
+        <div class="w-1/4 text-right">
+            <p class="text-xs">Serial No.: 12</p>
+        </div>
+    </div>
+
+    <!-- Main Title -->
+    <div class="text-center my-6">
+        <h2 class="text-2xl font-bold">Grade Sheet</h2>
+    </div>
+
+    <!-- Student and Grading System Section -->
+    <div class="flex justify-between items-center mb-6 text-sm">
+        <div class="w-2/3 space-y-2">
+            <div class="flex items-center">
+                <p class="w-32">Student ID</p>
+                <span class="mr-2">:</span>
+                <input type="text" value="17702061" class="border-b border-gray-400 p-1 flex-1">
+            </div>
+            <div class="flex items-center">
+                <p class="w-32">Name of the Student</p>
+                <span class="mr-2">:</span>
+                <input type="text" value="Mohtad Ahmed" class="border-b border-gray-400 p-1 flex-1">
+            </div>
+            <div class="flex items-center">
+                <p class="w-32">Name of the Hall</p>
+                <span class="mr-2">:</span>
+                <input type="text" value="Shaheed Abdur Rab Hall" class="border-b border-gray-400 p-1 flex-1">
+            </div>
+            <div class="flex items-center">
+                <p class="w-32">Session</p>
+                <span class="mr-2">:</span>
+                <input type="text" value="2016-2017" class="border-b border-gray-400 p-1 flex-1">
+            </div>
+        </div>
+
+        <!-- Grading System Table -->
+        <div class="w-1/3 ml-4 text-xxs">
+            <p class="font-bold text-center">Grading System</p>
+            <table class="grading-table w-full border-collapse border border-gray-400 mt-2">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-400 font-normal">Grade Class</th>
+                        <th class="border border-gray-400 font-normal">Letter Grade</th>
+                        <th class="border border-gray-400 font-normal">Grade Point</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="border border-gray-400">80% or above</td><td class="border border-gray-400 text-center">A+</td><td class="border border-gray-400 text-center">4.00</td></tr>
+                    <tr><td class="border border-gray-400">75% to less than 80%</td><td class="border border-gray-400 text-center">A</td><td class="border border-gray-400 text-center">3.75</td></tr>
+                    <tr><td class="border border-gray-400">70% to less than 75%</td><td class="border border-gray-400 text-center">A-</td><td class="border border-gray-400 text-center">3.50</td></tr>
+                    <tr><td class="border border-gray-400">65% to less than 70%</td><td class="border border-gray-400 text-center">B+</td><td class="border border-gray-400 text-center">3.25</td></tr>
+                    <tr><td class="border border-gray-400">60% to less than 65%</td><td class="border border-gray-400 text-center">B</td><td class="border border-gray-400 text-center">3.00</td></tr>
+                    <tr><td class="border border-gray-400">55% to less than 60%</td><td class="border border-gray-400 text-center">B-</td><td class="border border-gray-400 text-center">2.75</td></tr>
+                    <tr><td class="border border-gray-400">50% to less than 55%</td><td class="border border-gray-400 text-center">C+</td><td class="border border-gray-400 text-center">2.50</td></tr>
+                    <tr><td class="border border-gray-400">45% to less than 50%</td><td class="border border-gray-400 text-center">C</td><td class="border border-gray-400 text-center">2.25</td></tr>
+                    <tr><td class="border border-gray-400">40% to less than 45%</td><td class="border border-gray-400 text-center">D</td><td class="border border-gray-400 text-center">2.00</td></tr>
+                    <tr><td class="border border-gray-400">Less than 40%</td><td class="border border-gray-400 text-center">F</td><td class="border border-gray-400 text-center">0.00</td></tr>
+                    <tr><td class="border border-gray-400">Incomplete/Absent</td><td class="border border-gray-400 text-center">I</td><td class="border border-gray-400 text-center">0.00</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Course Table and GPA Formula -->
+    <div class="flex">
+        <table class="main-table w-3/4 text-sm border-collapse border border-gray-400 mb-6">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="border border-gray-400 p-2 font-semibold">Course Code</th>
+                    <th class="border border-gray-400 p-2 font-semibold course-title-cell">Course Title</th>
+                    <th class="border border-gray-400 p-2 font-semibold">Credits</th>
+                    <th class="border border-gray-400 p-2 font-semibold select-cell">Letter Grade</th>
+                    <th class="border border-gray-400 p-2 font-semibold input-cell">Grade Point</th>
+                </tr>
+            </thead>
+            <tbody id="marksheet-body">
+                <!-- Table rows will be dynamically added or pre-filled here -->
+               {% for item in result_data %}
+                    <tr>
+                        <td>{{ item.course.course_code }}</td>
+                        <td>{{ item.course.title }}</td>
+                        <td>{{ item.credit }}</td>
+                        <td>{{ item.grade }}</td>
+                        <td>{{ item.point|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="w-1/4 ml-3 text-[9px]">
+            <p class="font-bold text-center">GPA Calculation</p>
+            <div class="mt-4">
+                $$ GPA = \frac{\sum_{i=1}^{n} C_i G_i}{\sum_{i=1}^{n} C_i} $$
+                <p class="mt-4">
+                    Where,
+                </p>
+                <p class="mt-2">
+                    - $n$ is the number of courses offered in a semester.
+                </p>
+                <p class="mt-2">
+                    - $C_i$ is the number of credits assigned to a particular course '$i$'.
+                </p>
+                <p class="mt-2">
+                    - $G_i$ is the grade point corresponding to the grade earned for the course.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="flex justify-between items-start text-sm font-semibold mb-8">
+        <div class="w-1/2">
+            <p>Total Credits Offered : <span id="total-credits-offered">22</span></p>
+            <p>Total Credits Earned : <span id="total-credits-earned">22</span></p>
+            <p class="mt-2">Result : <span id="result">P</span></p>
+        </div>
+        <div class="w-1/2 text-right">
+            <p class="mb-2">GPA : <span id="gpa">3.43</span></p>
+        </div>
+    </div>
+
+    <!-- Signatures and Dates Section -->
+    <div class="flex justify-between items-end text-sm mt-8">
+        <div class="text-center">
+            <p class="border-t border-gray-600 mt-4">Date of Publication: <span class="font-normal text-xs">0 9 JAN 2022</span></p>
+        </div>
+        <div class="text-center">
+            <p>Prepared By................................................</p>
+        </div>
+        <div class="text-center">
+            <p>Controller of Examinations</p>
+            <p>University of Chittagong</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Mapping of letter grades to grade points
+        const gradePointMap = {
+            'A+': 4.00,
+            'A': 3.75,
+            'A-': 3.50,
+            'B+': 3.25,
+            'B': 3.00,
+            'B-': 2.75,
+            'C+': 2.50,
+            'C': 2.25,
+            'D': 2.00,
+            'F': 0.00,
+            'I': 0.00
+        };
+
+        const marksheetBody = document.getElementById('marksheet-body');
+        const totalCreditsOffered = document.getElementById('total-credits-offered');
+        const totalCreditsEarned = document.getElementById('total-credits-earned');
+        const gpaElement = document.getElementById('gpa');
+        const resultElement = document.getElementById('result');
+
+        // Function to update grade point based on selected letter grade
+        function updateGradePoint(event) {
+            const row = event.target.closest('.course-row');
+            const letterGrade = event.target.value;
+            const gradePointInput = row.querySelector('.grade-point-input');
+            gradePointInput.value = gradePointMap[letterGrade].toFixed(2);
+            calculateGPA();
+        }
+
+        // Function to calculate the GPA and total credits
+        function calculateGPA() {
+            let totalWeightedPoints = 0;
+            let totalCredits = 0;
+            let earnedCredits = 0;
+            let hasFailed = false;
+
+            const rows = marksheetBody.querySelectorAll('.course-row');
+            rows.forEach(row => {
+                const creditsInput = row.querySelector('.credits-input');
+                const gradePointInput = row.querySelector('.grade-point-input');
+                const letterGradeSelect = row.querySelector('.letter-grade-select');
+
+                const credits = parseFloat(creditsInput.value) || 0;
+                const gradePoint = parseFloat(gradePointInput.value) || 0;
+                const letterGrade = letterGradeSelect.value;
+
+                totalCredits += credits;
+                
+                // Only count credits for passing grades
+                if (letterGrade !== 'F' && letterGrade !== 'I') {
+                    earnedCredits += credits;
+                    totalWeightedPoints += credits * gradePoint;
+                }
+
+                if (letterGrade === 'F') {
+                    hasFailed = true;
+                }
+            });
+
+            const gpa = totalCredits > 0 ? (totalWeightedPoints / totalCredits).toFixed(2) : '0.00';
+            gpaElement.textContent = gpa;
+            totalCreditsOffered.textContent = totalCredits;
+            totalCreditsEarned.textContent = earnedCredits;
+            resultElement.textContent = hasFailed ? 'F' : 'P';
+        }
+
+        // Add event listeners to all select and input elements
+        marksheetBody.querySelectorAll('.letter-grade-select').forEach(select => {
+            select.addEventListener('change', updateGradePoint);
+        });
+
+        marksheetBody.querySelectorAll('.credits-input').forEach(input => {
+            input.addEventListener('input', calculateGPA);
+        });
+
+        // Initial calculation on page load
+        calculateGPA();
+    });
+</script>
+
+</body>
+</html>

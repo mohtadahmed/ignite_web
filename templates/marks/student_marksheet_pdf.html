@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .university {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .department {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .exam-title {
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .grade-sheet {
+            font-weight: bold;
+            font-size: 16px;
+            text-decoration: underline;
+            margin: 15px 0;
+        }
+        .student-info {
+            margin-bottom: 15px;
+        }
+        .info-row {
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 20px;
+        }
+        .signature {
+            margin-top: 50px;
+        }
+        .formula {
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="university">UNIVERSITY OF CHITTAGONG</div>
+        <div>CHITTAGONG, BANGLADESH</div>
+        <div class="department">Department of Electrical and Electronic Engineering</div>
+        <div class="exam-title">Seventh Semester B. Sc. Engineering Examination-2020</div>
+        <div>Held in February - November, 2021</div>
+        <div class="grade-sheet">Grade Sheet</div>
+    </div>
+
+    <div class="student-info">
+        <div class="info-row"><strong>Student ID:</strong> {{ student.student_id }}</div>
+        <div class="info-row"><strong>Name of the Student:</strong> {{ student_info.full_name }}</div>
+        <div class="info-row"><strong>Name of the Hall:</strong> {{ student_info.hall_name }}</div>
+        <div class="info-row"><strong>Session:</strong> {{ student_info.session }}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Credits</th>
+                <th>Letter Grade</th>
+                <th>Grade Point</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in result_data %}
+            <tr>
+                <td>{{ data.course.course_code }}</td>
+                <td>{{ data.course.course_name }}</td>
+                <td>{{ data.credit }}</td>
+                <td>{{ data.grade }}</td>
+                <td>{{ data.point }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="formula">
+        <p>GPA = \(\frac{\sum_{i=1}^{n} C_i G_i}{\sum C_i}\)</p>
+        <p>Where, 'n' is the number of courses offered in a semester. '\(C_i\)' is the number of credits assigned to a particular course 'i'. '\(G_i\)' is the grade point corresponding to the grade obtained for i-th course.</p>
+    </div>
+
+    <div class="info-row"><strong>Total Credits Offered:</strong> {{ total_credits }}</div>
+    <div class="info-row"><strong>Total Credits Earned:</strong> {{ total_credits }}</div>
+    <div class="info-row"><strong>GPA:</strong> {{ gpa }}</div>
+    <div class="info-row"><strong>Result:</strong> {{ result_status }}</div>
+
+    <div class="footer">
+        <div class="info-row"><strong>Date of Publication:</strong> {{ issue_date }}</div>
+        
+        <div class="signature">
+            <div style="float: left; width: 30%;">
+                Prepared By: ..........................
+            </div>
+            <div style="float: left; width: 30%;">
+                Date of Issue: ..........................
+            </div>
+            <div style="float: left; width: 40%;">
+                Compared By: ..........................<br>
+                Controller of Examinations<br>
+                University of Chittagong
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+    </div>
+</body>
+</html>

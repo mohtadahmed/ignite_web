@@ -74,8 +74,15 @@
         $('#course').html('<option>Loading...</option>');
         $.get('/assessments/get-courses/', { semester_id: semesterId }, function (data) {
             let options = '<option value="">-- Select Course --</option>';
+            // data.forEach(course => {
+            // options += `<option value="${course.id}">${course.course_code} - ${course.course_name}</option>`;
+            // });
             data.forEach(course => {
-            options += `<option value="${course.id}">${course.course_code} - ${course.course_name}</option>`;
+              if (course.course_type === 'theory') {   // 🔹 filter only theory
+                  options += `<option value="${course.id}">
+                      ${course.course_code} - ${course.course_name}
+                  </option>`;
+              }
             });
             $('#course').html(options);
         });
@@ -163,7 +170,7 @@
         // Build body
         tbody.empty();
         students.forEach(stu => {
-            let row = `<tr><td>${stu.student_id}</td><td>${stu.name}</td>`;
+            let row = `<tr><td>${stu.student_id}</td><td>${stu.full_name}</td>`;
             for (let i = 1; i <= currentCT; i++) {
                 const fieldName = `${stu.id}_ct${i}`;
                 const value = ctMarks[fieldName] ?? '';

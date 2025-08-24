@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">My Attendance Marks</h4>
+    </div>
+
+    <div class="card-body">
+      <!-- Semester Selector -->
+      <form method="get" id="semesterForm" class="mb-3 w-25">
+        <label for="semesterSelect" class="form-label">Select Semester</label>
+        <select id="semesterSelect" name="semester" class="custom-select" onchange="document.getElementById('semesterForm').submit()">
+          <option value="">-- Select Semester --</option>
+          {% for sem in semesters %}
+            <option value="{{ sem.id }}" {% if selected_semester_id == sem.id %}selected{% endif %}>{{ sem.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+
+
+    {% if attendance_marks %}
+    <div class="card mt-3 shadow-lg">
+        <div class="card-header">
+            <h4 class="mb-0">Attendance Marks Details</h4>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-4">
+                
+                <div class="card">
+                    <div class="card-body">
+                        {% for std in students %}
+                        <h5 class="text-primary">Student Details</h5>
+                        <hr>
+                            <div>
+                                <h5>Name of the Student: {{ std.full_name }}</h5>
+                                <p>Student ID: {{ std.student_id }}</p>
+                                <p>Department: {{ std.department }}</p>
+                                <p>Program: {{ std.program }}</p>
+                                <p>Session: {{ std.session }}</p>
+                                <p>Email: {{ std.user.email }}</p>
+                                <p>Phone: {{ std.phone }}</p>
+                            </div>
+                        <hr>
+
+                        {% endfor %}
+                    </div>
+                </div>
+                    
+            </div>
+            <!-- Attendance Marks Table -->
+            {% if attendance_marks %}
+            <table id="studentAttendanceMarks" class="table table-bordered table-striped table-hover">
+                <thead class="table-secondary">
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Attendance Marks</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for mark in attendance_marks %}
+                <tr>
+                    <td>{{ mark.course.course_code }}</td>
+                    <td>{{ mark.course.course_name }}</td>
+                    <td>{{ mark.mark }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                {% if selected_semester_id %}
+                <p class="text-muted">No attendance marks found for this semester.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

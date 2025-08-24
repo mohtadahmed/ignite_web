@@ -1,56 +1,52 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <div class="container mb-3">
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">Filter CT Marks</h4>
-    </div>
-
-    <div class="card-body">
-      <div class="d-flex justify-content-around">
-        <div>
-          <label for="semester">Select Semester</label>
-          <select id="semester" class="custom-select">
-            <option value="">-- Select Semester --</option>
-            {% for sem in semesters %}
-              <option value="{{ sem.id }}">{{ sem.name }}</option>
-            {% endfor %}
-          </select>
+    <div class="card">
+        <div class="card-header">
+            <h4>Filter Attendance Marks</h4>
         </div>
-        <div>
-          <label for="student">Select Student</label>
-          <select id="student" class="custom-select" disabled>
-            <option value="">-- Select Student --</option>
-          </select>
+        <div class="card-body">
+            <div class="d-flex justify-content-around">
+                <div>
+                    <label for="semester">Select Semester</label>
+                    <select id="semester" class="custom-select">
+                        <option value="">-- Select Semester --</option>
+                        {% for sem in semesters %}
+                            <option value="{{ sem.id }}">{{ sem.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="student">Select Student</label>
+                    <select id="student" class="custom-select" disabled>
+                        <option value="">-- Select Student --</option>
+                    </select>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
-
 
 <div class="container-fluid">
   <div class="card shadow-lg">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">CT Marks List</h4>
+      <h4 class="mb-0">Attendance Marks List</h4>
     </div>
 
     <div class="card-body">
-      <table id="ctMarksTable" class="table table-bordered table-striped table-hover">
+      <table id="attendanceMarksTable" class="table table-bordered table-striped table-hover">
         <thead class="table-secondary">
           <tr>
             <th>Semester</th>
-            <th>Course Code</th>
-            <th>Course Title</th>
+            <th>Course</th>
             <th>Student ID</th>
             <th>Student Name</th>
-            <th>CT Title</th>
-            <th>Mark</th>
-            <th>Date</th>
+            <th>Attendance Mark</th>
           </tr>
         </thead>
         <tbody id="marksBody">
-          <!-- Data will be injected here -->
+          <!-- Data will load here -->
         </tbody>
       </table>
     </div>
@@ -74,7 +70,7 @@ $(document).ready(function () {
         if (semesterId) {
             studentDropdown.html('<option>Loading...</option>').prop('disabled', false);
 
-            $.get('/assessments/ct-marks/get-students/', { semester_id: semesterId }, function (data) {
+            $.get('/assessments/attendance-marks/get-students/', { semester_id: semesterId }, function (data) {
                 let options = '<option value="">-- Select Student --</option>';
                 data.forEach(s => {
                     options += `<option value="${s.id}">${s.student_id} - ${s.name}</option>`;
@@ -94,27 +90,24 @@ $(document).ready(function () {
         tbody.empty();
 
         if (semesterId && studentId) {
-            tbody.html('<tr><td colspan="7">Loading...</td></tr>');
+            tbody.html('<tr><td colspan="5">Loading...</td></tr>');
 
-            $.get('/assessments/ct-marks/get-marks/', { semester_id: semesterId, student_id: studentId }, function (data) {
+            $.get('/assessments/attendance-marks/get-marks/', { semester_id: semesterId, student_id: studentId }, function (data) {
                 tbody.empty();
                 if (data.length > 0) {
                     data.forEach(m => {
                         tbody.append(`
                             <tr>
                               <td>${m.semester}</td>
-                              <td>${m.course_code}</td>
-                              <td>${m.course_title}</td>
+                              <td>${m.course}</td>
                               <td>${m.student_id}</td>
                               <td>${m.student_name}</td>
-                              <td>${m.title}</td>
                               <td>${m.mark}</td>
-                              <td>${m.date}</td>
                             </tr>
                         `);
                     });
                 } else {
-                    tbody.html('<tr><td colspan="7">No marks found</td></tr>');
+                    tbody.html('<tr><td colspan="5">No attendance marks found</td></tr>');
                 }
             });
         }

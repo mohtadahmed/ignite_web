@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+  <div class="card shadow-lg">
+    <div class="card-header">
+      <h4 class="mb-0">My Final Exam Marks</h4>
+    </div>
+
+    <div class="card-body">
+      <!-- Semester Selection -->
+      <form method="get" class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label for="semester" class="form-label">Select Semester</label>
+          <select name="semester" id="semester" class="form-control" required>
+            <option value="">-- Select Semester --</option>
+            {% for semester in semesters %}
+              <option value="{{ semester.id }}" {% if semester.id|stringformat:"s" == selected_semester_id %}selected{% endif %}>
+                {{ semester.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 align-self-end">
+          <button type="submit" class="btn btn-primary">Show Marks</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+    {% if final_marks %}
+    <div class="card mt-3 shadow-lg">
+        <div class="card-header">
+            <h4 class="mb-0">Final Exam Marks Details</h4>
+        </div>
+        <div class="card-body">
+
+            <div class="mb-4">
+                
+                <div class="card">
+                    <div class="card-body">
+                        {% for std in students %}
+                        <h5 class="text-primary">Student Details</h5>
+                        <hr>
+                            <div>
+                                <h5>Name of the Student: {{ std.full_name }}</h5>
+                                <p>Student ID: {{ std.student_id }}</p>
+                                <p>Department: {{ std.department }}</p>
+                                <p>Program: {{ std.program }}</p>
+                                <p>Session: {{ std.session }}</p>
+                                <p>Email: {{ std.user.email }}</p>
+                                <p>Phone: {{ std.phone }}</p>
+                            </div>
+                        <hr>
+
+                        {% endfor %}
+                    </div>
+                </div>
+                    
+            </div>
+
+
+            {% if final_marks %}
+            <table id="studentFinalExamMarks" class="table table-bordered table-striped table-hover">
+                <thead class="table-secondary">
+                <tr>
+                    <th>Semester</th>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>Mark</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for mark in final_marks %}
+                <tr>
+                    <td>{{ mark.semester.name }}</td>
+                    <td>{{ mark.course.course_code }}</td>
+                    <td>{{ mark.course.course_name }}</td>
+                    <td>{{ mark.marks_obtained }}</td>
+                    <td>{{ mark.created_at }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% elif selected_semester_id %}
+                <p class="text-danger">No Final Exam Marks found for this semester.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

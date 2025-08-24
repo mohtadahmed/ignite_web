@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card mt-4">
+  <div class="card-header">
+    <h5>Combined Result Overview</h5>
+  </div>
+  <div class="card-body">
+    <!-- Semester Dropdown -->
+    <div class="mb-3">
+      <label for="semester" class="form-label">Select Semester</label>
+      <select id="semester" class="form-control">
+        <option value="">-- Select Semester --</option>
+        {% for semester in semesters %}
+          <option value="{{ semester.id }}">{{ semester.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Results Table -->
+    <div id="result-overview">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Name</th>
+            <th>CT Marks</th>
+            <th>Attendance Marks</th>
+            <th>Final Exam Marks</th>
+            <th>Total Marks</th>
+          </tr>
+        </thead>
+        <tbody id="result-body">
+          <tr>
+            <td colspan="6" class="text-center">Select a semester to view results</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PDF Download Button -->
+    <button id="downloadPdfBtn" class="btn btn-primary mt-3" style="display:none;">
+      Download Result PDF
+    </button>
+  </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function() {
+    $('#semester').change(function() {
+      const semesterId = $(this).val();
+      if (!semesterId) {
+        $('#result-body').html('<tr><td colspan="6" class="text-center">Select a semester to view results</td></tr>');
+        $('#downloadPdfBtn').hide();
+        return;
+      }
+
+      // Fetch combined result data from backend
+      $.get('/assessments/get_result_overview/', { semester_id: semesterId }, function(data) {
+        if (data.length === 0) {
+          $('#result-body').html('<tr><td colspan="6" class="text-center">No results found</td></tr>');
+          $('#downloadPdfBtn').hide();
+          return;
+        }
+
+        let rows = '';
+        data.forEach(result => {
+          rows += `
+            <tr>
+              <td>${result.course_code}</td>
+              <td>${result.course_name}</td>
+              <td>${result.ct_mark || 0}</td>
+              <td>${result.attendance_mark || 0}</td>
+              <td>${result.final_mark || 0}</td>
+              <td>${result.total_mark || 0}</td>
+            </tr>
+          `;
+        });
+        $('#result-body').html(rows);
+        $('#downloadPdfBtn').show();
+      });
+    });
+
+    // Redirect to printable PDF view
+    $('#downloadPdfBtn').click(function() {
+      const semesterId = $('#semester').val();
+      if (semesterId) {
+        window.open(`/assessments/print_result_overview/?semester_id=${semesterId}`, '_blank');
+      }
+    });
+  });
+</script>
+
+{% endblock %}

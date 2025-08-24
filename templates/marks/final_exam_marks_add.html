@@ -67,8 +67,17 @@
                     console.log('Courses:', response);
                     const courseDropdown = $('#course');
                     courseDropdown.empty().append('<option value="">--- Select Course ---</option>');
+                    // response.forEach(course => {
+                    //     courseDropdown.append(`<option value="${course.id}" data-credit="${course.credit}">${course.course_code} - ${course.course_name}</option>`);
+                    // });
                     response.forEach(course => {
-                        courseDropdown.append(`<option value="${course.id}" data-credit="${course.credit}">${course.course_code} - ${course.course_name}</option>`);
+                        if (course.course_type === 'theory') {   // 🔹 filter here
+                            courseDropdown.append(
+                                `<option value="${course.id}" data-credit="${course.credit}">
+                                    ${course.course_code} - ${course.course_name}
+                                </option>`
+                            );
+                        }
                     });
                     courseDropdown.prop('disabled', false);
                 }

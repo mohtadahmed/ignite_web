@@ -1,29 +1,37 @@
 {% extends 'base.html' %}
 {% block content %}
-<h3>Upcoming Schedules</h3>
-<div class="list-group">
-  {% for item in schedules %}
-  <div class="list-group-item d-flex justify-content-between align-items-center">
-    <div>
-      <strong>{{ item.course.name }}</strong> - {{ item.get_exam_type_display }}
-      <br>
-      <small>{{ item.scheduled_date|date:"M d, Y - h:i A" }}</small>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h4 class="mb-0">Upcoming Schedules</h3>
     </div>
+    <div class="card-body">
+      <div class="list-group">
+        {% for item in schedules %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ item.course.course_name }}</strong> - {{ item.get_exam_type_display }}
+            <br>
+            <small>{{ item.scheduled_date|date:"M d, Y - h:i A" }}</small>
+          </div>
 
-    {% with days=item.days_left %}
-      {% if days > 2 %}
-        <span class="badge bg-success">In {{ days }} days</span>
-      {% elif days > 0 %}
-        <span class="badge bg-warning">In {{ days }} days</span>
-      {% elif days == 0 %}
-        <span class="badge bg-primary">Today</span>
-      {% else %}
-        <span class="badge bg-danger">Overdue</span>
-      {% endif %}
-    {% endwith %}
+          {% with days=item.days_left %}
+            {% if days > 2 %}
+              <span class="badge bg-success text-white">In {{ days }} days</span>
+            {% elif days > 0 %}
+              <span class="badge bg-warning text-white">In {{ days }} days</span>
+            {% elif days == 0 %}
+              <span class="badge bg-primary text-white">Today</span>
+            {% else %}
+              <span class="badge bg-danger text-white">Overdue</span>
+            {% endif %}
+          {% endwith %}
+        </div>
+        {% empty %}
+        <p>No upcoming schedules.</p>
+        {% endfor %}
+      </div>
+    </div>
   </div>
-  {% empty %}
-  <p>No upcoming schedules.</p>
-  {% endfor %}
 </div>
 {% endblock %}
