@@ -92,11 +92,37 @@ def attendance_mark_entry(request):
     semesters = Semester.objects.all()
     return render(request, 'marks/attendance_entry.html', {'semesters': semesters})
 
+def get_attendance_marks(request):
+    semester_id = request.GET.get("semester_id")
+    student_id = request.GET.get("student_id")
+
+    marks = AttendanceMark.objects.select_related("student", "course", "semester").filter(
+        semester_id=semester_id, student_id=student_id
+    )
+
+    data = []
+    for m in marks:
+        data.append({
+            "semester": str(m.semester.name),
+            "course": f"{m.course.course_code} - {m.course.course_name}",
+            "student_id": m.student.student_id,
+            "student_name": m.student.full_name,
+            "mark": m.mark,
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+def attendance_marks_list(request):
+    semesters = Semester.objects.all()
+    return render(request, 'marks/attendance_marks_list.html', {'semesters': semesters})
+
+
 
 def get_courses_by_semester(request):
     semester_id = request.GET.get('semester_id') 
     print('semester_id', semester_id)
-    courses = Course.objects.filter(semester_id=semester_id).values('id', 'course_code', 'course_name', 'credit')
+    courses = Course.objects.filter(semester_id=semester_id).values('id', 'course_code', 'course_name', 'credit', 'course_type')
     print('courses', courses)
     return JsonResponse(list(courses), safe=False)
 
@@ -181,6 +207,30 @@ def get_ct_marks(request):
     return JsonResponse({'ct_marks': data})
 
 
+def get_ct_marks_new(request):
+    semester_id = request.GET.get("semester_id")
+    student_id = request.GET.get("student_id")
+
+    marks = CTMark.objects.select_related("student", "course", "semester").filter(
+        semester_id=semester_id, student_id=student_id
+    )
+
+    data = []
+    for m in marks:
+        data.append({
+            "semester": str(m.semester.name),
+            "course_code": m.course.course_code,
+            "course_title": m.course.course_name,
+            "student_id": m.student.student_id,
+            "student_name": m.student.full_name,
+            "title": m.title,
+            "mark": m.mark,
+            "date": m.date.strftime("%Y-%m-%d"),
+        })
+
+    return JsonResponse(data, safe=False)
+
+
 @csrf_exempt
 def save_ct_marks(request):
     if request.method == 'POST':
@@ -222,8 +272,18 @@ def save_ct_marks(request):
 
 
 def ct_marks_list(request):
-    ct_marks = CTMark.objects.select_related('student', 'course').all()
-    return render(request, 'marks/ct_marks_list.html', {'ct_marks': ct_marks})
+    # ct_marks = CTMark.objects.select_related('student', 'course').all()
+    semesters = Semester.objects.all()
+    return render(request, 'marks/ct_marks_list.html', {'semesters': semesters})
+
+
+def get_students_by_semester(request):
+    semester_id = request.GET.get("semester_id")
+    students = StudentProfile.objects.filter(semester=semester_id)
+    print('students', students)
+
+    data = [{"id": s.id, "student_id": s.student_id, "name": s.full_name} for s in students]
+    return JsonResponse(data, safe=False)
 
 
 # Assignment Marks Section
@@ -736,6 +796,10 @@ def generate_marksheet(request):
     return render(request, 'marks/marksheet_panel.html', context)
 
 
+def show_marksheet(request):
+    return render(request, 'marksheet.html')
+
+
 
 from assessments.utils import calculate_grade
 from io import BytesIO
@@ -746,7 +810,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, KeepTogether)
-from reportlab.lib.units import inch
+from reportlab.lib.units import inch, mm
 from reportlab.pdfgen import canvas
 import os
 from datetime import datetime
@@ -899,12 +963,7 @@ def generate_marksheet_pdf(request, student_id, semester_id):
 
         story = []
 
-        # Add University Logo
-        # logo_path = "static/img/university_logo.png"  # Update with your actual path
-        # logo = PILImage(logo_path, width=1.5*inch, height=1.5*inch)
-        # logo.hAlign = 'CENTER'
-        # story.append(logo)
-        # story.append(Spacer(1, 12))  # Add some space after logo
+        
         logo_path = os.path.join('static', 'img', 'university_logo.png')
         if os.path.exists(logo_path):
             try:
@@ -929,23 +988,13 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         
         # Student Info
         story.append(Paragraph("Grade Sheet", styles['CenterTitle']))
-        # story.append(Spacer(1, 6))
-        # story.append(Paragraph(f"Student ID : {student.student_id}", styles['CenterNormal']))
-        # story.append(Paragraph(f"Name of the Student: Dummy Student Name", styles['CenterNormal']))
-        # story.append(Paragraph(f"Name of the Hall : Dummy hall name", styles['CenterNormal']))
-        # story.append(Paragraph(f"Session : {student.session}", styles['CenterNormal']))
-        # story.append(Spacer(1, 12))
-
-        # Student Info
-        # Student Info Section - Left aligned
-        # story.append(Paragraph("Grade Sheet", styles['LeftNormal']))
         story.append(Spacer(1, 6))
 
         # Create a table for perfect alignment with the main content table
         student_info_data = [
             [Paragraph(f"<b>Student ID</b>:", styles['LeftNormal']), Paragraph(student.student_id, styles['LeftNormal'])],
-            [Paragraph(f"<b>Name of Student</b>:", styles['LeftNormal']), Paragraph('Namirah Tarannum', styles['LeftNormal'])],
-            [Paragraph(f"<b>Hall</b>:", styles['LeftNormal']), Paragraph(getattr(student, 'hall', 'Preeteelata Hall'), styles['LeftNormal'])],
+            [Paragraph(f"<b>Name of the Student</b>:", styles['LeftNormal']), Paragraph(student.full_name, styles['LeftNormal'])],
+            [Paragraph(f"<b>Name of the Hall</b>:", styles['LeftNormal']), Paragraph(student.hall, styles['LeftNormal'])],
             [Paragraph(f"<b>Session</b>:", styles['LeftNormal']), Paragraph(student.session, styles['LeftNormal'])]
         ]
 
@@ -959,13 +1008,6 @@ def generate_marksheet_pdf(request, student_id, semester_id):
 
         story.append(student_info_table)
         story.append(Spacer(1, 12))
-        # story.append(Paragraph("Grade Sheet", styles['LeftTitle']))
-        # story.append(Spacer(1, 6))
-        # story.append(Paragraph(f"<b>Student ID:</b> {student.student_id}", styles['LeftNormal']))
-        # story.append(Paragraph(f"<b>Name of Student:</b> Namirah Tarannum", styles['LeftNormal']))
-        # story.append(Paragraph(f"<b>Hall:</b> {getattr(student, 'hall', 'Preetilata Hall')}", styles['LeftNormal']))
-        # story.append(Paragraph(f"<b>Session:</b> {student.session}", styles['LeftNormal']))
-        # story.append(Spacer(1, 12))
         
         # Grade Table
         table_data = [
@@ -993,15 +1035,7 @@ def generate_marksheet_pdf(request, student_id, semester_id):
         
         # Footer
         gpa = (total_grade_points / Decimal(total_credits)).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
-        # story.append(Paragraph(f"GPA: {gpa:.2f}", styles['normal']))
-        # story.append(Spacer(1, 24))
-        # Four items side by side
-        # footer_data = [
-        #     [f"<b>Total Credits Offered : {total_credits:.2f}</b>", 
-        #      f"<b>Total Credits Earned :</b> {total_credits:.2f}",
-        #      f"GPA: {gpa:.2f}",
-        #      "Result: P" if gpa >= 2.00 else "Result: F"]
-        # ]
+        
         footer_data = [
             [
                 Paragraph(f"<b>Total Credits Offered: {total_credits:.2f}</b>", styles['BottomFooter']),
@@ -1294,6 +1328,524 @@ def transcript_view(request):
     return render(request, 'marks/transcript.html', {'students': students})
 
 
+from io import BytesIO
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import landscape, A4, legal
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
+
+# def transcript_landscape_view(request, student_id):
+#     # Response setup
+#     buffer = BytesIO()
+#     p = canvas.Canvas(buffer, pagesize=landscape(legal))
+#     width, height = landscape(legal)
+
+#     # === HEADER PLACEHOLDER ===
+#     p.setFont("Helvetica-Bold", 16)
+#     p.drawCentredString(width / 2, height - 40, "UNIVERSITY NAME")
+#     p.setFont("Helvetica", 12)
+#     p.drawCentredString(width / 2, height - 60, "Transcript (Landscape Format)")
+
+#     # Dummy data
+#     data = [
+#         ["S/L", "Student ID", "Name", "Hall", "EEE 511", "", "", "", "", "EEE 512", "", "", "", "",
+#          "EEE 513", "", "", "", "", "EEE 514", "", "", "", "", "EEE 515", "", "", "", "",
+#          "EEE 516", "", "", "", "", "CSE 517", "", "", "", "", "CSE 518", "", "", "", "",
+#          "EEE 519", "", "", "", "", "TCP", "GPA", "Results", "Remarks"],
+#         ["", "", "", "", "CATM", "FEM", "MO", "LG", "CP", "CATM", "FEM", "MO", "LG", "CP",
+#          "CATM", "FEM", "MO", "LG", "CP", "CATM", "FEM", "MO", "LG", "CP",
+#          "CATM", "FEM", "MO", "LG", "CP", "CATM", "FEM", "MO", "LG", "CP",
+#          "CATM", "FEM", "MO", "LG", "CP", "CATM", "FEM", "MO", "LG", "CP",
+#          "CATM", "FEM", "MO", "LG", "CP", "", "", "", ""],
+#         [1, "21702002", "Abdul Mannan", "Shaheed Abdur Rab Hall",
+#          18, 44, 92.75, "B+", 3.75, 10, 15, 30, "B", 3.00,
+#          15, 58, 97.5, "A", 4.00, 18, 35, 83.5, "A-", 3.50,
+#          53, 105, 90, "A", 4.00, 26, 56, 92, "B", 3.00,
+#          10, 18, 30, "A+", 4.00, 38, 58, 96, "A", 4.00,
+#          112.5, 4.00, "PASS", ""],
+#         [2, "21702005", "Mokhlasur Rahaman", "Shaheed Abdur Rab Hall",
+#          15, 40, 75, "C+", 2.50, 7.5, 15, 30, "B", 3.00,
+#          13, 45, 80, "A-", 3.50, 17, 30, 70, "B+", 3.25,
+#          28, 0, 0, "F", 0.00, 16, 56, 90, "A", 4.00,
+#          18, 38, 92, "A", 4.00, 48, 53, 101, "A+", 4.00,
+#          98.0, 3.75, "PASS", ""],
+#     ]
+
+#     # Table styling
+#     table = Table(data, repeatRows=2)
+#     style = TableStyle([
+#         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+#         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+#         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+#         ('SPAN', (0,0), (0,1)),  # S/L merge
+#         ('SPAN', (1,0), (1,1)),  # Student ID
+#         ('SPAN', (2,0), (2,1)),  # Name
+#         ('SPAN', (3,0), (3,1)),  # Hall
+#         ('SPAN', (4,0), (8,0)),  # EEE 511
+#         ('SPAN', (9,0), (13,0)),  # EEE 512
+#         ('SPAN', (14,0), (18,0)), # EEE 513
+#         ('SPAN', (19,0), (23,0)), # EEE 514
+#         ('SPAN', (24,0), (28,0)), # EEE 515
+#         ('SPAN', (29,0), (33,0)), # EEE 516
+#         ('SPAN', (34,0), (38,0)), # CSE 517
+#         ('SPAN', (39,0), (43,0)), # CSE 518
+#         ('SPAN', (44,0), (48,0)), # EEE 519
+#         ('SPAN', (49,0), (49,1)), # TCP
+#         ('SPAN', (50,0), (50,1)), # GPA
+#         ('SPAN', (51,0), (51,1)), # Results
+#         ('SPAN', (52,0), (52,1)), # Remarks
+#     ])
+#     table.setStyle(style)
+
+#     # Draw table
+#     table.wrapOn(p, width, height)
+#     table.drawOn(p, 20, height - 200)
+
+#     # === FOOTER PLACEHOLDER ===
+#     p.setFont("Helvetica", 10)
+#     p.drawString(40, 40, "Generated by University System")
+
+#     p.showPage()
+#     p.save()
+#     buffer.seek(0)
+
+#     return HttpResponse(buffer, content_type='application/pdf')
+
+
+
+# Make sure to install reportlab: pip install reportlab
+
+
+
+
+
+from reportlab.platypus import Table, TableStyle, Paragraph, Flowable
+from reportlab.lib.styles import getSampleStyleSheet
+
+# ✨ NEW: Class for drawing rotated text in table headers
+# class VerticalText(Flowable):
+#     """A flowable that draws text rotated 90 degrees."""
+#     def __init__(self, text, font_name='Helvetica-Bold', font_size=7):
+#         Flowable.__init__(self)
+#         self.text = text
+#         self.font_name = font_name
+#         self.font_size = font_size
+
+#     def draw(self):
+#         canvas = self.canv
+#         canvas.saveState()
+#         canvas.setFont(self.font_name, self.font_size)
+#         canvas.rotate(90)
+#         # The coordinates are x, y. We draw slightly up from the bottom-left.
+#         canvas.drawString(3, -self.width + 4, self.text)
+#         canvas.restoreState()
+
+#     def wrap(self, availableWidth, availableHeight):
+#         # This is tricky. We are rotating, so the concepts of width/height are swapped.
+#         self.width = availableHeight
+#         # The height it needs is the width of the string.
+#         self.height = self.canv.stringWidth(self.text, self.font_name, self.font_size)
+#         return (self.width, self.height)
+
+# def transcript_landscape_view(request, student_id):
+#     buffer = BytesIO()
+#     p = canvas.Canvas(buffer, pagesize=landscape(legal))
+#     width, height = landscape(legal)
+
+#     # --- ✨ NEW: Prepare styles for Paragraphs ---
+#     styles = getSampleStyleSheet()
+#     # Center-aligned style for Name/Hall cells
+#     p_style = styles['Normal']
+#     p_style.alignment = 1 # 0=left, 1=center, 2=right
+#     p_style.leading = 10 # Line spacing
+
+#     # --- Data for the Table ---
+#     # Create the rotated sub-headers
+#     sub_header_texts = ["CATM", "FEM", "MO", "CP", "LG"]
+#     rotated_headers = [VerticalText(text) for text in sub_header_texts]
+
+#     # Main student data list
+#     students_data = [
+#         [1, "21702002", "Abdul Mannan", "Shaheed Abdur Rab Hall", [18,44,62,3.00,"B"], [15,35,50,3.00,"B"], [15,40,55,3.25,"B+"] ],
+#         [2, "21702005", "Mokhlasur Rahaman", "Shaheed Abdur Rab Hall", [10,40,50,3.00,"B"], [15,38,53,3.00,"B"], [17,33,50,3.00,"B"] ],
+#         # ... add more student data in the same format
+#     ]
+
+#     # --- Build the table row-by-row ---
+#     data = []
+#     # Row 0: Main Headers
+#     header_row_1 = ["S/L", "Student ID", "Name\nHall", "EEE 511", "", "", "", "", "EEE 512", "", "", "", "", "EEE 513", "", "", "", "", "Results", "Remarks"]
+#     data.append(header_row_1)
+
+#     # Row 1: Sub-headers (using rotated text)
+#     header_row_2 = ["", "", ""]
+#     for _ in range(3): # For 3 courses in this example
+#         header_row_2.extend(rotated_headers)
+#     header_row_2.extend(["", ""]) # For Results, Remarks
+#     data.append(header_row_2)
+
+#     # Add student rows
+#     for student in students_data:
+#         row = [
+#             student[0],
+#             student[1],
+#             Paragraph(f"{student[2]}<br/>{student[3]}", p_style)
+#         ]
+#         # Add course data
+#         for course in student[4:]:
+#             row.extend(course)
+#         row.extend(["PASS", ""]) # Add results and remarks
+#         data.append(row)
+
+#     # --- Define Column Widths ---
+#     col_widths = [0.3*inch, 0.7*inch, 1.8*inch] # S/L, ID, Name/Hall
+#     course_col_width = [0.4*inch] * 5
+#     for _ in range(3): # For 3 courses
+#         col_widths.extend(course_col_width)
+#     col_widths.extend([0.7*inch, 1.2*inch]) # Results, Remarks
+
+#     # --- Create Table and Apply Styles ---
+#     table = Table(data, colWidths=col_widths, rowHeights=None, repeatRows=2)
+#     style = TableStyle([
+#         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+#         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+#         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+#         ('FONTSIZE', (0,0), (-1,-1), 7),
+#         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Bold for top header
+
+#         # Header background
+#         ('BACKGROUND', (0,0), (-1,1), colors.lightgrey),
+#         # Make name/hall cell text smaller
+#         ('FONTSIZE', (2,2), (2,-1), 8),
+
+#         # SPAN commands for cell merging
+#         ('SPAN', (0,0), (0,1)),      # S/L
+#         ('SPAN', (1,0), (1,1)),      # Student ID
+#         ('SPAN', (2,0), (2,1)),      # Name/Hall
+#         ('SPAN', (3,0), (7,0)),      # EEE 511
+#         ('SPAN', (8,0), (12,0)),     # EEE 512
+#         ('SPAN', (13,0), (17,0)),    # EEE 513
+#         ('SPAN', (18,0), (18,1)),    # Results
+#         ('SPAN', (19,0), (19,1)),    # Remarks
+#     ])
+#     table.setStyle(style)
+
+#     # --- Draw the table ---
+#     # The table is drawn from the bottom-left corner.
+#     table.wrapOn(p, width, height)
+#     table.drawOn(p, 20, 250) # x, y coordinates from bottom-left
+
+#     # To repeat the table with a new set of students (as shown in your image)
+#     # You would simply create and draw a second Table object below the first one.
+#     # table2.drawOn(p, 20, 50)
+
+#     p.showPage()
+#     p.save()
+#     buffer.seek(0)
+
+#     return HttpResponse(buffer, content_type='application/pdf')
+
+
+
+# ==============================================================================
+# Full Code for Tabulation Sheet PDF Generation in Django
+# ==============================================================================
+
+# --- Python & Django Imports ---
+import os
+from io import BytesIO
+from datetime import datetime
+from decimal import Decimal, ROUND_CEILING
+
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
+from django.db.models import Sum
+
+# --- ReportLab Imports ---
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import landscape, legal
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle, Paragraph, Flowable
+from reportlab.lib.styles import getSampleStyleSheet
+
+# --- ‼️ UPDATE THESE: Your Project's Models ---
+# Make sure to import all the models you use for students, courses, and marks.
+from .models import StudentProfile, Semester, Course, CTMark, AttendanceMark, FinalExamMark, LabMark
+# from .models import ThesisMark, FieldWorkMark # etc.
+
+
+# ==============================================================================
+# Helper Classes & Functions
+# ==============================================================================
+
+class VerticalText(Flowable):
+    """A flowable that draws text rotated 90 degrees for table headers."""
+    def __init__(self, text, font_name='Helvetica-Bold', font_size=7):
+        Flowable.__init__(self)
+        self.text = text
+        self.font_name = font_name
+        self.font_size = font_size
+
+    def draw(self):
+        canv = self.canv
+        canv.saveState()
+        canv.setFont(self.font_name, self.font_size)
+        canv.rotate(90)
+        canv.drawString(3, -self.width + 4, self.text)
+        canv.restoreState()
+
+    def wrap(self, availableWidth, availableHeight):
+        self.width = availableHeight
+        self.height = self.canv.stringWidth(self.text, self.font_name, self.font_size)
+        return (self.width, self.height)
+
+def calculate_grade(percentage):
+    """
+    Calculates letter grade and grade point from a percentage.
+    ‼️ UPDATE THIS with your university's grading policy.
+    """
+    percentage = Decimal(percentage)
+    if percentage >= 80: return 'A+', 4.00
+    if percentage >= 75: return 'A', 3.75
+    if percentage >= 70: return 'A-', 3.50
+    if percentage >= 65: return 'B+', 3.25
+    if percentage >= 60: return 'B', 3.00
+    if percentage >= 55: return 'B-', 2.75
+    if percentage >= 50: return 'C+', 2.50
+    if percentage >= 45: return 'C', 2.25
+    if percentage >= 40: return 'D', 2.00
+    return 'F', 0.00
+
+def calculate_course_results(student, course):
+    """
+    Calculates marks, grade, and point for a student in a course.
+    """
+    try:
+        course_type = course.course_type.lower()
+        credit = course.credit
+        total_mark = Decimal(0)
+        ca_mark = Decimal(0)  # Continuous Assessment
+        th_mark = Decimal(0)  # Theory/Final Exam
+
+        if course_type == 'theory':
+            ct_total = CTMark.objects.filter(student=student, course=course).aggregate(
+                total=Sum('mark')
+            )['total'] or 0
+            # Assuming average of 3 class tests. Adjust if different.
+            ct_avg = (Decimal(ct_total) / 3).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+            attendance_obj = AttendanceMark.objects.filter(student=student, course=course).first()
+            attendance_mark = Decimal(attendance_obj.mark) if attendance_obj else Decimal(0)
+            
+            ca_mark = ct_avg + attendance_mark
+
+            final_exam_obj = FinalExamMark.objects.filter(student=student, course=course).first()
+            th_mark = Decimal(final_exam_obj.marks_obtained) if final_exam_obj else Decimal(0)
+
+            total_mark = (ca_mark + th_mark).quantize(Decimal('0.01'))
+
+        elif course_type == 'lab':
+            lab_mark_obj = LabMark.objects.filter(student=student, course=course).first()
+            if lab_mark_obj:
+                # For labs, you might assign components differently or just show total
+                ca_mark = Decimal(lab_mark_obj.quiz_viva) + Decimal(lab_mark_obj.attendance)
+                th_mark = Decimal(lab_mark_obj.experiment) # As an example
+                total_mark = (ca_mark + th_mark).quantize(Decimal('0.01'))
+        
+        # ‼️ Add your logic for 'thesis', 'field work', etc. here
+        
+        # If no marks found, return 'Not Applicable'
+        if not total_mark and not ca_mark and not th_mark:
+             return {'ca': '-', 'th': '-', 'total': '-', 'grade': '-', 'point': Decimal(0.0), 'credit': Decimal(credit)}
+
+        # ‼️ UPDATE THIS: Max marks might not always be credit * 25
+        max_marks = credit * 25 
+        percentage = (total_mark / max_marks) * 100 if max_marks > 0 else 0
+        grade, point = calculate_grade(percentage)
+
+        return {
+            'ca': ca_mark,
+            'th': th_mark,
+            'total': total_mark,
+            'grade': grade,
+            'point': Decimal(point),
+            'credit': Decimal(credit),
+        }
+
+    except Exception as e:
+        print(f"Error calculating marks for {student.student_id} in {course.course_code}: {e}")
+        return {'ca': 'Err', 'th': 'Err', 'total': 'Err', 'grade': 'F', 'point': Decimal(0.0), 'credit': Decimal(credit)}
+
+
+# ==============================================================================
+# Main Django View
+# ==============================================================================
+ledger = (17 * inch, 10 * inch)
+def generate_tabulation_sheet_view(request, student_id):
+    """
+    Generates a multi-student, landscape tabulation sheet PDF.
+    """
+    # --- 1. Fetch Data ---
+    # ‼️ UPDATE THIS QUERY: Select the students you want on the sheet.
+    students_to_include = StudentProfile.objects.all()
+    
+    # ‼️ UPDATE THIS QUERY: Get the ordered list of courses for the columns.
+    # courses_to_include = Course.objects.all().order_by('semester__name', 'course_code')
+    courses_to_include = Course.objects.filter(semester__name='1-1').order_by('course_code')
+
+    # --- 2. Initialize PDF ---
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=landscape(legal))
+    width, height = landscape(legal)
+    
+    left_margin = 0.3 * inch
+    right_margin = width - 0.5 * inch
+    center = width / 2
+
+    # --- 3. Draw Static Header ---
+    y_pos = height - 40
+    try:
+        if os.path.exists('static/img/university_logo.png'):
+            p.drawImage('static/img/university_logo.png', left_margin, y_pos - 25, width=50, height=50, mask='auto')
+        if os.path.exists('static/img/department_logo.png'):
+            p.drawImage('static/img/department_logo.png', right_margin - 50, y_pos - 25, width=50, height=50, mask='auto')
+    except Exception as e:
+        print(f"Error loading logos: {e}")
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(center, y_pos, "University of Chittagong")
+    p.setFont("Helvetica-Bold", 14)
+    p.drawCentredString(center, y_pos - 20, "Faculty of Engineering")
+    p.setFont("Helvetica-Bold", 12)
+    p.drawCentredString(center, y_pos - 38, "Department of Electrical & Electronic Engineering")
+    p.setFont("Helvetica-Bold", 12)
+    p.drawCentredString(center, y_pos - 55, "B.Sc. Engineering Examination")
+
+    # --- 4. Prepare Table Data ---
+    styles = getSampleStyleSheet()
+    p_style = styles['Normal']
+    p_style.alignment = 1  # Center alignment
+    p_style.fontSize = 7
+    p_style.leading = 9    # Line spacing
+
+    # Define table headers
+    header1 = ["S/L", "Student ID", "Name\nHall"]
+    for course in courses_to_include:
+        header1.extend([f"{course.course_code}\n({course.credit})", "", "", "", ""]) # Add credit to header
+    header1.extend(["TCP", "TGP", "GPA", "Result", "Remarks"])
+
+    header2 = ["", "", ""]
+    rotated_subheaders = [VerticalText("CA"), VerticalText("TH"), VerticalText("Total"), VerticalText("LG"), VerticalText("GP")]
+    for _ in courses_to_include:
+        header2.extend(rotated_subheaders)
+    header2.extend(["", "", "", "", ""])
+
+    table_data = [header1, header2]
+
+    # Populate table with student data
+    for i, student in enumerate(students_to_include):
+        student_row = [
+            i + 1,
+            student.student_id,
+            Paragraph(f"<b>Namirah Tarannum</b><br/>{getattr(student, 'hall', 'N/A')}", p_style)
+        ]
+        
+        total_credits_passed = Decimal(0)
+        total_grade_points = Decimal(0)
+
+        data_font = 'Helvetica'
+        data_font_size = 6.5
+
+        # for course in courses_to_include:
+        #     results = calculate_course_results(student, course)
+        #     student_row.extend([results['ca'], results['th'], results['total'], results['grade'], results['point']])
+            
+        #     if results['grade'] not in ['F', '-', 'N/A']:
+        #         total_credits_passed += results['credit']
+        #         total_grade_points += results['point'] * results['credit']
+        for course in courses_to_include:
+            results = calculate_course_results(student, course)
+            
+            student_row.extend([
+                VerticalText(str(results['ca']), font_name=data_font, font_size=data_font_size),
+                VerticalText(str(results['th']), font_name=data_font, font_size=data_font_size),
+                VerticalText(str(results['total']), font_name=data_font, font_size=data_font_size),
+                VerticalText(str(results['grade']), font_name=data_font, font_size=data_font_size),
+                VerticalText(str(results['point']), font_name=data_font, font_size=data_font_size)
+            ])
+            
+            if results['grade'] not in ['F', '-', 'N/A']:
+                total_credits_passed += results['credit']
+                total_grade_points += results['point'] * results['credit']
+        
+        gpa = (total_grade_points / total_credits_passed).quantize(Decimal('0.01')) if total_credits_passed > 0 else Decimal('0.00')
+        result_status = "PASS" if gpa >= 2.00 else "FAIL" # Example logic
+
+        # student_row.extend([total_credits_passed, total_grade_points, gpa, result_status, ""])
+        student_row.extend([
+            VerticalText(str(total_credits_passed), font_name=data_font, font_size=data_font_size),
+            VerticalText(str(total_grade_points), font_name=data_font, font_size=data_font_size),
+            VerticalText(str(gpa), font_name=data_font, font_size=data_font_size),
+            result_status, # Result text remains horizontal for readability
+            "" # Remarks remain horizontal
+        ])
+        table_data.append(student_row)
+
+    # --- 5. Define Table Layout and Style ---
+    col_widths = [0.3*inch, 0.6*inch, 1.4*inch]
+    course_sub_widths = [0.28*inch, 0.28*inch, 0.28*inch, 0.28*inch, 0.28*inch]
+    for _ in courses_to_include:
+        col_widths.extend(course_sub_widths)
+
+    # for _ in courses_to_include:
+    #     col_widths.extend([0.35*inch] * 5)
+    col_widths.extend([0.35*inch, 0.35*inch, 0.35*inch, 0.5*inch, 0.8*inch])
+    
+
+    main_table = Table(table_data, colWidths=col_widths, rowHeights=None, repeatRows=2)
+    
+    style = TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTSIZE', (0,0), (-1,-1), 6),
+        ('FONTNAME', (0,0), (-1,1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0,0), (-1,1), colors.lightgrey),
+        ('SPAN', (0,0), (0,1)), ('SPAN', (1,0), (1,1)), ('SPAN', (2,0), (2,1)),
+        ('SPAN', (-5,0), (-5,1)), ('SPAN', (-4,0), (-4,1)), ('SPAN', (-3,0), (-3,1)),
+        ('SPAN', (-2,0), (-2,1)), ('SPAN', (-1,0), (-1,1)),
+    ])
+    
+    for i in range(len(courses_to_include)):
+        start_col = 3 + (i * 5)
+        end_col = start_col + 4
+        style.add('SPAN', (start_col, 0), (end_col, 0))
+
+    main_table.setStyle(style)
+
+    # --- 6. Draw Table and Footer ---
+    table_y_pos = height - 130 # Position table below header
+    main_table.wrapOn(p, width, height)
+    main_table.drawOn(p, left_margin, table_y_pos - main_table._height)
+    
+    footer_y = 0.3 * inch
+    p.setFont("Helvetica-Oblique", 8)
+    p.drawCentredString(center, footer_y + 10, "Generated by Ignite Result Management System")
+    p.drawCentredString(center, footer_y, f"Date of Publication: {datetime.now().strftime('%B %d, %Y')}")
+
+    # --- 7. Finalize and Return PDF ---
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="tabulation_sheet.pdf"'
+    return response
+
+
+
 def lab_mark_entry(request):
     students = StudentProfile.objects.all()
     courses = Course.objects.filter(course_type='lab')  # Only lab courses
@@ -1424,3 +1976,582 @@ def field_work_mark_entry(request):
         'students': students,
         'field_work_courses': field_work_courses,
     })
+
+
+
+# Student Ct marks
+def student_ct_marks(request):
+    student = request.user.studentprofile  # Assuming you have a StudentProfile linked with User
+    
+    students = StudentProfile.objects.filter(id=student.id)
+    semesters = Semester.objects.all()
+
+    selected_semester_id = request.GET.get('semester')
+    ct_marks = None
+
+    if selected_semester_id:
+        ct_marks = CTMark.objects.filter(
+            student=student,
+            semester_id=selected_semester_id
+        ).select_related('course', 'semester')
+
+    return render(request, 'marks/student_ct_marks.html', {
+        'semesters': semesters,
+        'selected_semester_id': selected_semester_id,
+        'ct_marks': ct_marks,
+        'students': students,
+    })
+
+
+# Student Attendance marks
+def student_attendance_marks(request):
+    student = request.user.studentprofile  # assuming relation User -> StudentProfile
+    print('attendance student', student)
+    semesters = Semester.objects.all()
+
+    students = StudentProfile.objects.filter(id=student.id)
+    print('attandance students', students)
+
+    selected_semester_id = request.GET.get('semester')
+    attendance_marks = []
+
+    if selected_semester_id:
+        attendance_marks = AttendanceMark.objects.filter(
+            student=student,
+            semester_id=selected_semester_id
+        ).select_related('course', 'semester')
+
+    return render(request, 'marks/student_attendance_marks.html', {
+        'semesters': semesters,
+        'attendance_marks': attendance_marks,
+        'selected_semester_id': int(selected_semester_id) if selected_semester_id else None,
+        'students': students,
+    })
+
+
+# Student Final Exam marks
+def student_final_marks(request):
+    student = request.user.studentprofile
+    print('final student', student)
+
+    students = StudentProfile.objects.filter(id=student.id)
+    print('final students', students)
+
+    semesters = Semester.objects.all()
+    selected_semester_id = request.GET.get("semester")
+    final_marks = None
+
+    if selected_semester_id:
+        final_marks = FinalExamMark.objects.filter(
+            student=student, 
+            semester_id=selected_semester_id
+        ).select_related("course", "semester")
+    
+    print('final_marks', final_marks)
+
+    return render(request, "marks/student_final_marks.html", {
+        "semesters": semesters,
+        "final_marks": final_marks,
+        "selected_semester_id": selected_semester_id,
+        "students": students,
+    })
+
+
+def student_result_overview(request):
+    semesters = Semester.objects.all()
+    return render(request, 'marks/student_result_overview.html', {
+        'semesters': semesters
+    })
+
+
+def get_result_overview(request):
+    student = request.user.studentprofile  # assuming OneToOne relation
+    semester_id = request.GET.get('semester_id')
+
+    if not semester_id:
+        return JsonResponse({"error": "Semester ID is required"}, status=400)
+
+    courses = Course.objects.filter(semester_id=semester_id, course_type="theory")
+    results = []
+
+    for course in courses:
+        ct_mark = CTMark.objects.filter(student=student, course=course).first()
+        ct_avg = (Decimal(ct_mark)/3).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if ct_mark else Decimal(0)
+        attendance_mark = AttendanceMark.objects.filter(student=student, course=course).first()
+        final_mark = FinalExamMark.objects.filter(student=student, course=course).first()
+
+        total_mark = Decimal('0.0')
+        total_mark += Decimal(ct_mark.mark) if ct_mark and ct_mark.mark is not None else Decimal('0.0')
+        total_mark += Decimal(attendance_mark.mark) if attendance_mark and attendance_mark.mark is not None else Decimal('0.0')
+        total_mark += Decimal(final_mark.marks_obtained) if final_mark and final_mark.marks_obtained is not None else Decimal('0.0')
+
+        results.append({
+            "course_code": course.course_code,
+            "course_name": course.course_name,
+            "ct_mark": float(ct_mark.mark) if ct_mark and ct_mark.mark is not None else None,
+            "attendance_mark": float(attendance_mark.mark) if attendance_mark and attendance_mark.mark is not None else None,
+            "final_mark": float(final_mark.marks_obtained) if final_mark and final_mark.marks_obtained is not None else None,
+            "total_mark": float(total_mark)
+        })
+
+    return JsonResponse(results, safe=False)
+
+
+def student_marksheet_panel(request):
+    student = request.user.studentprofile  # Only the logged-in student
+    semesters = Semester.objects.all()
+
+    selected_semester_id = request.GET.get('semester')
+    result_data = []
+    gpa = Decimal('0.00')
+
+    if selected_semester_id:
+        semester = Semester.objects.get(id=selected_semester_id)
+        courses = Course.objects.filter(semester=semester)
+
+        total_credits = 0
+        total_grade_points = Decimal('0.00')
+
+        for course in courses:
+            try:
+                course_type = course.course_type.lower()
+                credit = course.credit
+                total_mark = Decimal('0.00')
+
+                # THEORY
+                if course_type == 'theory':
+                    ct_marks = CTMark.objects.filter(student=student, course=course).aggregate(total=Sum('mark'))['total'] or Decimal('0.0')
+                    ct_avg = (ct_marks / 3).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if ct_marks else Decimal('0.0')
+
+                    attendance = AttendanceMark.objects.filter(student=student, course=course).first()
+                    attendance_mark = Decimal(attendance.mark).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if attendance else Decimal('0.0')
+
+                    final_exam = FinalExamMark.objects.filter(student=student, course=course).first()
+                    final_mark = Decimal(final_exam.marks_obtained).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if final_exam else Decimal('0.0')
+
+                    total_mark = (ct_avg + attendance_mark + final_mark).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+                # LAB
+                elif course_type == 'lab' and LabMark.objects.filter(student=student, course=course).exists():
+                    lab_mark = LabMark.objects.get(student=student, course=course)
+                    total_mark = (
+                        Decimal(lab_mark.quiz_viva) +
+                        Decimal(lab_mark.experiment) +
+                        Decimal(lab_mark.attendance)
+                    ).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+                # THESIS
+                elif course_type == 'thesis' and ThesisMark.objects.filter(student=student, course=course).exists():
+                    thesis_mark = ThesisMark.objects.get(student=student, course=course)
+                    total_mark = (
+                        Decimal(thesis_mark.internal) +
+                        Decimal(thesis_mark.external) +
+                        Decimal(thesis_mark.presentation)
+                    ).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+                # FIELD WORK
+                elif course_type == 'field work' and FieldWorkMark.objects.filter(student=student, course=course).exists():
+                    field_mark = FieldWorkMark.objects.get(student=student, course=course)
+                    total_mark = Decimal(field_mark.field_mark).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+                else:
+                    continue  # Skip unknown course types or missing marks
+
+                # Percentage and Grade
+                max_total = credit * 25  # Assuming max marks per credit
+                percentage = (total_mark / max_total) * 100
+                grade, point = calculate_grade(float(percentage))
+
+                result_data.append({
+                    'course': course,
+                    'credit': credit,
+                    'total_mark': total_mark,
+                    'percentage': round(percentage, 2),
+                    'grade': grade,
+                    'point': point,
+                })
+
+                total_credits += credit
+                total_grade_points += Decimal(point) * Decimal(credit)
+
+            except Exception as e:
+                print(f"Error processing course {course.course_name}: {e}")
+                continue
+
+        gpa = (total_grade_points / Decimal(total_credits)).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if total_credits > 0 else Decimal('0.00')
+
+        # PDF export
+        if 'export_pdf' in request.GET:
+            context = {
+                'student': student,
+                'semester': semester,
+                'result_data': result_data,
+                'gpa': gpa
+            }
+            html = render_to_string('marks/student_marksheet_pdf.html', context)
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename=Marksheet_{student.student_id}_{semester.name}.pdf'
+            pisa_status = pisa.CreatePDF(html, dest=response)
+            if pisa_status.err:
+                return HttpResponse('Error generating PDF')
+            return response
+
+    context = {
+        'student': student,
+        'semesters': semesters,
+        'selected_semester_id': selected_semester_id,
+        'result_data': result_data,
+        'gpa': gpa
+    }
+    return render(request, 'marks/student_marksheet_panel.html', context)
+
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.colors import Color, black, white
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.units import inch, mm
+from reportlab.lib import colors
+from io import BytesIO
+import os
+from decimal import Decimal, ROUND_CEILING
+from django.db.models import Sum
+from reportlab.platypus.flowables import Image
+from reportlab.pdfbase.pdfmetrics import registerFontFamily
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+
+def student_marksheet_pdf(request, semester_id):
+    student = request.user.studentprofile
+    print('student', student)
+    semester = Semester.objects.get(id=semester_id)
+    courses = Course.objects.filter(semester=semester)
+
+    student_info = StudentProfile.objects.get(id=student.id)
+    print('studetn info', student_info)
+
+    result_data = []
+    total_credits = 0
+    total_grade_points = Decimal('0.00')
+
+    for course in courses:
+        # Copy your calculation logic from generate_marksheet
+        # For brevity, assuming you already have total_mark, grade, point
+        course_type = course.course_type.lower()
+        credit = course.credit
+        total_mark = Decimal(0)
+
+        if course_type == 'theory':
+            ct_marks = CTMark.objects.filter(student=student, course=course).aggregate(
+                total=Sum('mark')
+            )['total'] or 0
+            ct_avg = (Decimal(ct_marks) / 3).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if ct_marks else Decimal(0)
+            attendance = AttendanceMark.objects.filter(student=student, course=course).first()
+            attendance_mark = Decimal(attendance.mark).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if attendance else Decimal(0)
+            final_exam = Decimal(FinalExamMark.objects.get(student=student, course=course).marks_obtained).quantize(Decimal('0.01'), rounding=ROUND_CEILING) if FinalExamMark.objects.filter(student=student, course=course).exists() else Decimal(0)
+
+            total_mark = (
+                (Decimal(ct_avg) +
+                (Decimal(attendance_mark)  +
+                (Decimal(final_exam) )))
+            ).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+        elif course_type == 'lab':
+            lab_mark = LabMark.objects.get(student=student, course=course)
+            total_mark = (
+                Decimal(lab_mark.quiz_viva).quantize(Decimal('0.01'), rounding=ROUND_CEILING) +
+                Decimal(lab_mark.experiment).quantize(Decimal('0.01'), rounding=ROUND_CEILING) +
+                Decimal(lab_mark.attendance).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+            ).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+        elif course_type == 'thesis':
+            thesis_mark = ThesisMark.objects.get(student=student, course=course)
+            total_mark = (
+                Decimal(thesis_mark.internal).quantize(Decimal('0.01'), rounding=ROUND_CEILING) +
+                Decimal(thesis_mark.external).quantize(Decimal('0.01'), rounding=ROUND_CEILING) +
+                Decimal(thesis_mark.presentation).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+            ).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+        elif course_type == 'field work':
+            field_work = FieldWorkMark.objects.get(student=student, course=course)
+            total_mark = Decimal(field_work.field_mark).quantize(Decimal('0.01'), rounding=ROUND_CEILING)
+
+        else:
+            continue  # skip if unknown course_type
+
+        # Normalize based on credit
+        max_total = credit * 25
+        percentage = (total_mark / max_total) * 100
+        grade, point = calculate_grade(percentage)
+        result_data.append({
+            'course': course,
+            'credit': course.credit,
+            'grade': grade,
+            'point': point
+        })
+        print('result data', result_data)
+        total_credits += course.credit
+        total_grade_points += Decimal(point) * Decimal(course.credit)
+
+    gpa = (total_grade_points / Decimal(total_credits)).quantize(Decimal('0.01')) if total_credits > 0 else Decimal('0.00')
+    result_status = "P" if all(item['point'] > 0 for item in result_data) else "F"
+
+
+    # Create the PDF using ReportLab
+    # PDF Generation
+    buffer = BytesIO()
+    # Use A4 size with appropriate margins to match the reference
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4,
+        leftMargin=15*mm,
+        rightMargin=15*mm,
+        topMargin=10*mm,
+        bottomMargin=15*mm
+    )
+    
+    # Custom styles
+    styles = getSampleStyleSheet()
+    
+    # University header style
+    styles.add(ParagraphStyle(
+        'UniversityHeader',
+        parent=styles['Normal'],
+        fontSize=16,
+        alignment=TA_CENTER,
+        spaceAfter=6,
+        fontName='Helvetica-Bold'
+    ))
+    
+    # Department style
+    styles.add(ParagraphStyle(
+        'Department',
+        parent=styles['Normal'],
+        fontSize=12,
+        alignment=TA_CENTER,
+        spaceAfter=6,
+        fontName='Helvetica-Bold'
+    ))
+    
+    # Exam info style
+    styles.add(ParagraphStyle(
+        'ExamInfo',
+        parent=styles['Normal'],
+        fontSize=11,
+        alignment=TA_CENTER,
+        spaceAfter=6
+    ))
+    
+    # Grade Sheet title
+    styles.add(ParagraphStyle(
+        'GradeSheetTitle',
+        parent=styles['Normal'],
+        fontSize=14,
+        alignment=TA_CENTER,
+        spaceBefore=12,
+        spaceAfter=12,
+        fontName='Helvetica-Bold'
+    ))
+    
+    # Student info style
+    styles.add(ParagraphStyle(
+        'StudentInfo',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_LEFT,
+        spaceAfter=3
+    ))
+    
+    # Table header style
+    styles.add(ParagraphStyle(
+        'TableHeader',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    ))
+    
+    # Table content style
+    styles.add(ParagraphStyle(
+        'TableContent',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_CENTER
+    ))
+    
+    # Formula style
+    styles.add(ParagraphStyle(
+        'Formula',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=TA_LEFT,
+        spaceAfter=3
+    ))
+    
+    # Summary style
+    styles.add(ParagraphStyle(
+        'Summary',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_LEFT,
+        spaceAfter=3
+    ))
+    
+    # Footer style
+    styles.add(ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_LEFT,
+        spaceAfter=3
+    ))
+    
+    story = []
+    
+    # Header - University information
+    logo_path = os.path.join('static', 'img', 'university_logo.png')
+    if os.path.exists(logo_path):
+        try:
+            logo = RLImage(logo_path, width=1.5*inch, height=1.5*inch)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 12))
+        except:
+            story.append(Paragraph("University of Chittagong", styles['CenterTitle']))
+    else:
+        story.append(Paragraph("University of Chittagong", styles['CenterTitle']))
+    
+    story.append(Paragraph("UNIVERSITY OF CHITTAGONG", styles['UniversityHeader']))
+    story.append(Paragraph("CHITTAGONG, BANGLADESH", styles['ExamInfo']))
+    story.append(Paragraph("Department of Electrical and Electronic Engineering", styles['Department']))
+    story.append(Paragraph("Seventh Semester B. Sc. Engineering Examination-2020", styles['ExamInfo']))
+    story.append(Paragraph("Held in February - November, 2021", styles['ExamInfo']))
+    story.append(Spacer(1, 12))
+    
+    # Grade Sheet title
+    story.append(Paragraph("Grade Sheet", styles['GradeSheetTitle']))
+    
+    # Student information
+    student_info_data = [
+        [Paragraph("<b>Student ID</b>", styles['StudentInfo']), Paragraph(f": {student.student_id}", styles['StudentInfo'])],
+        [Paragraph("<b>Name of the Student</b>", styles['StudentInfo']), Paragraph(f": {student.full_name}", styles['StudentInfo'])],
+        [Paragraph("<b>Name of the Hall</b>", styles['StudentInfo']), Paragraph(f": {student.hall}", styles['StudentInfo'])],
+        [Paragraph("<b>Session</b>", styles['StudentInfo']), Paragraph(f": {student.session}", styles['StudentInfo'])]
+    ]
+    
+    student_table = Table(student_info_data, colWidths=[1.5*inch, 4*inch])
+    student_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        # ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+    ]))
+    
+    story.append(student_table)
+    story.append(Spacer(1, 12))
+    
+    # Course results table
+    table_data = [
+        [
+            Paragraph("Course Code", styles['TableHeader']),
+            Paragraph("Course Title", styles['TableHeader']),
+            Paragraph("Credits", styles['TableHeader']),
+            Paragraph("Letter Grade", styles['TableHeader']),
+            Paragraph("Grade Point", styles['TableHeader'])
+        ]
+    ]
+    
+    for item in result_data:
+        table_data.append([
+            Paragraph(item['course'].course_code, styles['TableContent']),
+            Paragraph(item['course'].course_name, styles['TableContent']),
+            Paragraph(str(item['credit']), styles['TableContent']),
+            Paragraph(item['grade'], styles['TableContent']),
+            Paragraph(f"{item['point']:.2f}", styles['TableContent'])
+        ])
+    
+    # Create table with appropriate column widths
+    course_table = Table(table_data, colWidths=[1.0*inch, 3.0*inch, 0.6*inch, 0.9*inch, 0.9*inch])
+    course_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),  # Use string 'CENTER' not TA_CENTER
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ('INNERGRID', (0,0), (-1,-1), 1, colors.black),
+    ]))
+    
+    story.append(course_table)
+    story.append(Spacer(1, 12))
+
+    # Summary information
+    summary_data = [
+        [Paragraph("<b>Total Credits Offered</b>", styles['Summary']), Paragraph(f": {total_credits}", styles['Summary'])],
+        [Paragraph("<b>Total Credits Earned</b>", styles['Summary']), Paragraph(f": {total_credits}", styles['Summary'])],
+        [Paragraph("<b>GPA</b>", styles['Summary']), Paragraph(f": {gpa:.2f}", styles['Summary'])],
+        [Paragraph("<b>Result</b>", styles['Summary']), Paragraph(f": {result_status}", styles['Summary'])]
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[1.5*inch, 1.0*inch])
+    summary_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    
+    story.append(summary_table)
+    story.append(Spacer(1, 12))
+    
+    # Footer with dates and signatures
+    story.append(Paragraph(f"Date of Publication: 09 JAN 2022", styles['Footer']))
+    story.append(Spacer(1, 24))
+    
+    # Signature area (exactly as in the reference image)
+    signature_data = [
+        [
+            Paragraph("Prepared By:..............................", styles['Footer']),
+            Paragraph("Date of Issue:..............................", styles['Footer']),
+            Paragraph("Compared By:..............................", styles['Footer'])
+        ],
+        [
+            "",
+            "",
+            Paragraph("Controller of Examinations", styles['Footer'])
+        ],
+        [
+            "",
+            "",
+            Paragraph("University of Chittagong", styles['Footer'])
+        ]
+    ]
+    
+    signature_table = Table(signature_data, colWidths=[2.0*inch, 2.0*inch, 2.0*inch])
+    signature_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (0,0), (0,-1), 'LEFT'),  # Use string 'LEFT' not TA_LEFT
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),  # Use string 'CENTER' not TA_CENTER
+        ('ALIGN', (2,0), (2,-1), 'RIGHT'),  # Use string 'RIGHT' not TA_RIGHT
+    ]))
+    
+    story.append(signature_table)
+    
+    # Build PDF
+    doc.build(story)
+    pdf = buffer.getvalue()
+    buffer.close()
+    
+    # Create HTTP response
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Marksheet_{student.student_id}_{semester.name}.pdf"'
+    response.write(pdf)
+    
+    return response
+
+
+def student_marksheet_pdf_demo(request):
+    return render(request, 'marks/student_marksheet_pdf_demo.html')

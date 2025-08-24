@@ -6,6 +6,8 @@ urlpatterns = [
     # add your URL paths here in the future
     path('add-ct-marks/', views.enter_ct_marks, name='add_ct_marks'),
     path('get-ct-marks/', views.get_ct_marks, name='get_ct_marks'),
+    path("ct-marks/get-students/", views.get_students_by_semester, name="get_students_by_semester"),
+    path("ct-marks/get-marks/", views.get_ct_marks_new, name="get_ct_marks_new"),
     path('save-ct-marks/', views.save_ct_marks, name='save_ct_marks'),
 
     # path('add-assignment-marks/', views.add_assignment_marks, name='add_assignment_marks'),
@@ -21,6 +23,10 @@ urlpatterns = [
     path('quiz-marks/', views.quiz_marks_list, name='quiz_marks_list'),
 
     path('attendance/', views.attendance_mark_entry, name='attendance_mark_entry'),
+    path("attendance-marks/", views.attendance_marks_list, name="attendance_marks_list"),
+    path("attendance-marks/get-students/", views.get_students_by_semester, name="attendance_students"),
+    path("attendance-marks/get-marks/", views.get_attendance_marks, name="attendance_marks"),
+
     path('get-courses/', views.get_courses_by_semester, name='get_courses_by_semester'),
     path('get-students/', views.get_students_for_attendance, name='get_students_for_attendance'),
     path('save-attendance/', views.save_attendance_marks, name='save_attendance_marks'),
@@ -40,6 +46,7 @@ urlpatterns = [
 
     path('student-marksheet/', views.student_marksheet_view, name='student_marksheet'),
     path('marksheet/', views.generate_marksheet, name='generate_marksheet'),
+    path('show-marksheet/', views.show_marksheet, name='show_marksheet'),
 
     path('lab-marks/', views.lab_mark_entry, name='lab_mark_entry'),
 
@@ -50,5 +57,18 @@ urlpatterns = [
     path('transcript_view/', views.transcript_view, name='transcript_view'),
     path('marksheet/pdf/<int:student_id>/<int:semester_id>/', views.generate_marksheet_pdf, name='generate_marksheet_pdf'),
 
+    path('transcript-landscape/<int:student_id>/', views.generate_tabulation_sheet_view, name='transcript_landscape_view'),
+
+
+    path('student_ct_marks', views.student_ct_marks, name='student_ct_marks'),
+    path('student_attendance_marks', views.student_attendance_marks, name='student_attendance_marks'),
+    path('student_final_marks', views.student_final_marks, name='student_final_marks'),
+    path("get_result_overview/", views.get_result_overview, name="get_result_overview"),
+    path("student_result_overview/", views.student_result_overview, name="student_result_overview"),
+
+    path('student_marksheet_panel/', views.student_marksheet_panel, name='student_marksheet_panel'),
+    
+    path('marksheet/pdf/<int:semester_id>/', views.student_marksheet_pdf, name='student_marksheet_pdf'),
+    path('student_marksheet_pdf_demo/', views.student_marksheet_pdf_demo, name='student_marksheet_pdf_demo'),
 
 ]
